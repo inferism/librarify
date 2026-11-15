@@ -1,11 +1,15 @@
 # Librarify — Architecture
 
-Librarify is a Claude Code skill. Typing `/librarify` inside any project turns that
-project into a **library**: a folder containing one self-contained HTML file that a
-person can open and read to understand the system.
+Librarify is a skill for coding agents. Typing `/librarify` inside any project
+turns that project into a **library**: a folder containing one self-contained HTML
+file that a person can open and look around in to understand the system.
 
 Graphify answers "how are these things connected?" with a graph.
 Librarify answers "explain this system to me" with books.
+
+It is a small thing: a set of instructions, one HTML template, and one short
+script. The agent does the reading, the deciding and the writing. The script only
+puts the result into the page.
 
 ## 1. What it produces
 
@@ -14,244 +18,169 @@ Running `/librarify` in a project creates this folder in the project root:
 ```
 librarify-out/
 ├─ index.html      the library — one file, works offline, open by double-click
-├─ library.json    the same content as data (used by `/librarify ask` and other agents)
-├─ LIBRARY.md      plain-markdown index, readable on GitHub
-├─ books/*.md      one markdown file per book (mirror of the HTML content)
-├─ manifest.json   source-file hashes per book, commit, librarify version
-└─ .work/          scratch space for the run (ignored by an inner .gitignore)
+└─ library.json    the same content as data
 ```
 
-`index.html` has no external requests of any kind: no CDN, no fonts, no analytics.
-All CSS, JavaScript and content are inlined.
+`index.html` makes no external requests of any kind: no CDN, no fonts, no
+analytics. All styling, code and content are inside the one file.
 
 ## 2. The library model
 
-Everything in the viewer and the data file is built from six concepts.
-
-| Concept | What it is | Example |
+| Concept | What it is | In the viewer |
 |---|---|---|
-| **Wing** | A top-level area of the library | Architecture Wing |
-| **Shelf** | A group of related books inside a wing | "Payments" |
-| **Book** | One topic, explained end to end | "How a checkout request is processed" |
-| **Chapter** | A section of a book | "Step 3: charging the card" |
-| **Reading path** | An ordered tour through several books for one goal | "Your first day" |
-| **Catalog** | Search index, glossary and the "How do I…?" recipes | — |
-
-In the viewer these are drawn as a small isometric building: a wing is a room, a
-shelf is a bookcase, a book is a block on that bookcase, and a reading path is a
-trail across the floor.
+| **Wing** | A top-level area of the library | A room |
+| **Shelf** | A group of related books inside a wing | A bookcase in that room |
+| **Book** | One topic, explained end to end | A block on the bookcase; thicker = covers more code |
+| **Chapter** | A section of a book | A section on the reading desk |
+| **Reading path** | An ordered tour through several books for one goal | A dotted trail across the floor |
 
 ### Standard wings
 
-Every library has the same floor plan, so a reader who has used one librarified
+Every library uses the same wings, so someone who has seen one librarified
 project knows their way around the next.
 
 | Wing | Answers | Typical books |
 |---|---|---|
-| **Lobby** | What is this and where do I start? | Overview, How to run it, Map of the system |
-| **Architecture** | What are the parts and how do they fit? | Components, Data model, Boundaries and dependencies |
+| **Lobby** | What is this and where do I start? | Overview, How to run it |
+| **Architecture** | What are the parts and how do they fit? | Components, Data model, Boundaries |
 | **Workflow** | What happens when…? | Request lifecycle, key user journeys, build and deploy |
 | **Security** | What is protected, and how? | Trust boundaries, sign-in and permissions, secrets handling, areas needing review |
 | **Stacks** | What does this module do? | One book per significant module |
 | **Workshop** | How do I change…? | Task recipes: "add an endpoint", "add a migration" |
 
-Wings with nothing to say are omitted (a CLI tool with no auth gets a short Security
-wing, not a padded one).
+Wings with nothing to say are left out.
 
-### Book anatomy
+### What a book holds
 
 ```jsonc
 {
-  "id": "ARC-002",                 // call number: wing prefix + sequence, stable across updates
+  "id": "ARC-002",                 // call number: wing prefix + sequence
   "title": "Data model",
   "wing": "architecture",
   "shelf": "Core",
-  "blurb": "One sentence.",        // depth level 1
-  "summary": "One paragraph.",     // depth level 2
-  "chapters": [                    // depth level 3
+  "blurb": "One sentence.",        // depth 1
+  "summary": "One paragraph.",     // depth 2
+  "chapters": [                    // depth 3
     {
-      "id": "entities",
       "title": "The main entities",
       "stamp": "verified",         // verified | inferred | open
-      "body": "Restricted markdown with [[src:…]] [[book:…]] [[term:…]] references"
+      "body": "Plain paragraphs. May contain [[src:path/file.ts#L10-L24]] and [[book:ARC-001]]."
     }
   ],
-  "diagrams": [ { "type": "flow" | "map", "…": "declarative spec, see §6" } ],
-  "checks":   [ { "q": "Question?", "a": "Answer." } ],   // reading check, 2–3 per book
   "unknowns": [ "Things the writer could not determine from the source." ],
-  "sources":  [ { "path": "src/models/user.ts", "hash": "sha256:…" } ],
-  "related":  [ "ARC-001", "WRK-003" ],
-  "weight": 0.12                   // share of the codebase this book covers (drives the book's thickness on its shelf)
+  "weight": 0.12                   // share of the codebase this book covers
 }
 ```
 
-Three reference kinds are allowed inside chapter bodies:
-
-- `[[src:path/to/file.ts#L10-L24]]` — a citation into the source. Rendered as a chip.
-- `[[book:ARC-001]]` — a link to another book.
-- `[[term:Session]]` — a glossary term. Rendered with a hover definition.
-
-The full schema lives in `skill/references/book-schema.md` and is enforced by the
-validator. Books that fail validation never reach the HTML.
+`library.json` also holds a short project summary (name, one-sentence
+description, languages, the commit it was written from) and the reading paths.
+The exact format, with limits, is in `skill/references/book-format.md`.
 
 ## 3. Repository layout
 
 ```
 librarify/
-├─ ARCHITECTURE.md  SECURITY.md  README.md      committed
-├─ DESIGN.md  WORKFLOW.md  TASK.md              local working docs (gitignored)
-├─ skill/                     ← everything that gets installed
-│  ├─ SKILL.md                the instructions Claude follows on /librarify
-│  ├─ references/             loaded only when the step needs them
-│  │  ├─ catalog-planning.md  how to decide wings, shelves and books
-│  │  ├─ writer-brief.md      the prompt given to each book-writing subagent
-│  │  ├─ book-schema.md       the book format and reference syntax
-│  │  ├─ ask.md               answering questions from an existing library
-│  │  └─ update.md            incremental rebuild
+├─ ARCHITECTURE.md  SECURITY.md  README.md
+├─ skill/                        ← this folder is the skill; copy it to ~/.claude/skills/librarify
+│  ├─ SKILL.md                   the steps the agent follows on /librarify
+│  ├─ references/
+│  │  ├─ book-format.md          what library.json contains
+│  │  └─ writing-books.md        how to write a good book
 │  ├─ scripts/
-│  │  ├─ librarify.mjs        CLI entry: survey | validate | build | check | open
-│  │  └─ lib/                 inventory, ignore rules, hashing, redaction,
-│  │                          schema, references, markdown mirror, html assembly
+│  │  └─ build.mjs               puts library.json into the template → index.html
 │  └─ viewer/
-│     ├─ template.html        shell with CSP and injection points
-│     ├─ order.json           the order css/ and js/ files are concatenated in
-│     ├─ css/*.css            tokens, frame, scene, reader, overlays, print
-│     └─ js/*.js              one file per module (see §6)
-├─ install.mjs                copies skill/ to ~/.claude/skills/librarify
-├─ tests/                     node:test suites + fixture repos
-└─ examples/                  a finished library for a small fixture project
+│     └─ template.html           the isometric library viewer, one file
+├─ examples/
+│  └─ sample-library.json        a hand-written library used to build and test the viewer
+└─ tests/
 ```
 
-## 4. Technology choices
+## 4. What happens on `/librarify`
 
-| Choice | Decision | Why |
+Five steps. Only step 4 is code; the rest is the agent following `SKILL.md`.
+
+```
+1 Look ──▶ 2 Plan ──▶ 3 Write ──▶ 4 Build ──▶ 5 Report
+ agent      agent      agent       script      agent
+```
+
+| # | Step | What happens |
 |---|---|---|
-| Runtime for scripts | Node.js 18+, **zero dependencies** | One language for scripts and viewer, a single `node` binary name on every OS, nothing to `npm install`, no supply-chain surface |
-| Viewer | Vanilla JS + CSS, no framework, no build step | Must inline into one offline file and stay auditable |
-| Markdown | Own renderer for a restricted subset, building DOM nodes directly | No `innerHTML` with content means no XSS path (see SECURITY.md) |
-| 3D scene | Isometric SVG drawn by our own projection code, four fixed view angles | No WebGL and no 3D library; every book stays a real, focusable element; colours come from CSS so themes work |
-| Diagrams | Own SVG renderer for two declarative types | Avoids shipping a large diagram library; diagram text is never executed |
-| Fonts | System font stacks | No network, no embedded font weight |
-| Tests | `node:test` built-in | No dependency |
-
-## 5. The pipeline
-
-`/librarify` runs seven stages. Stages marked **script** are deterministic Node code
-and cost no tokens. Stages marked **model** are done by Claude.
-
-```
- 1 Survey ──▶ 2 Plan ──▶ 3 Write ──▶ 4 Validate ──▶ 5 Assemble ──▶ 6 Build ──▶ 7 Report
-  script       model      model       script          model          script      model
-                         (parallel)   ▲      │
-                                      └──────┘ one retry per failed book
-```
-
-| # | Stage | Who | Input → Output |
-|---|---|---|---|
-| 1 | **Survey** | script | project → `.work/survey.json`: file inventory (via `git ls-files`, falling back to a walk with default ignores), languages, sizes, hashes, package manifests, likely entry points. Secret-bearing and binary files are listed as *excluded* and never opened. |
-| 2 | **Plan the catalog** | model | survey + a skim of entry points → `.work/catalog.json`: the wings, shelves and books to write, and which source files belong to each book. Book count scales with project size and is capped. |
-| 3 | **Write books** | model, parallel subagents | each writer gets one book assignment, reads only its files, and writes `.work/drafts/<id>.json` following `writer-brief.md`. |
-| 4 | **Validate** | script | every draft is checked: schema, every `[[src:]]` points at a real file and line range, every `[[book:]]` and `[[term:]]` resolves, no secret patterns, size limits. Failures go back to the writer once with the error list; a second failure drops the book and is reported. |
-| 5 | **Assemble** | model | with all books in hand, write the cross-cutting pieces: reading paths, glossary, Workshop recipes, the Lobby overview. |
-| 6 | **Build** | script | drafts → `library.json`, `books/*.md`, `LIBRARY.md`, `manifest.json`, and `index.html` (viewer template + inlined CSS/JS + embedded JSON). |
-| 7 | **Report** | model | prints where the library is, how many books, what share of files are cited, what was excluded, and what could not be determined. Offers to open it. |
+| 1 | **Look** | List the project's files (using git when available), note languages and sizes, and skim the entry points and manifests. Files that hold secrets, binaries, and ignored files are skipped and never opened. |
+| 2 | **Plan** | Decide which wings apply and which books to write, and which files each book is about. The number of books follows the size of the project. |
+| 3 | **Write** | Write each book following `writing-books.md` and save everything as `librarify-out/library.json` in the format from `book-format.md`. On larger projects, books are written by parallel subagents, one per book or shelf. |
+| 4 | **Build** | Run `node build.mjs librarify-out`. The script checks the data has what the viewer needs, checks it for obvious secrets, and writes `index.html`. |
+| 5 | **Report** | Say where the library is, how many books and wings, what was skipped, and what could not be determined. Offer to open it. |
 
 ### Commands
 
 ```
-/librarify                  build the library for the current project
-/librarify <path>           build for a sub-folder
-/librarify --quick          fewer, shorter books (fast first look)
-/librarify --deep           more Stacks books, reading checks on every book
-/librarify --update         rewrite only books whose source files changed
-/librarify check            list stale books (script only, no tokens)
-/librarify ask "<question>" answer from the existing library, with citations
-/librarify open             open index.html in the default browser
-/librarify --help           print usage
+/librarify            build the library for the current project
+/librarify <path>     build for a sub-folder
+/librarify --help     print usage
 ```
 
-**Fast path.** If `librarify-out/library.json` exists and the user asks a question
-about the project, Claude answers from the library first (`ask.md`) instead of
-re-reading the codebase.
+Running it again rebuilds the library from scratch.
 
-### Incremental update
+If `librarify-out/library.json` already exists and the user asks a question about
+the project, the agent reads the library first instead of re-reading the code.
 
-`manifest.json` records, for each book, the hash of every source file it was written
-from. `check` re-hashes and reports books whose sources changed, were deleted, or
-whose folder gained new files. `--update` rewrites only those books, re-runs
-Assemble, and rebuilds. Call numbers are preserved so bookmarks and links survive.
+### How many books
 
-### Scaling limits
-
-| Project size | Books | Behaviour |
+| Project size | Books | How |
 |---|---|---|
-| < 50 files | 6–10 | single pass, few subagents |
-| 50–500 files | 10–25 | parallel writers |
-| 500–5,000 files | 25–40 | Stacks books cover folders, not files; estimate shown before writing |
-| > 5,000 files | — | asks the user to pick a sub-folder or confirm `--quick` |
+| under 50 files | 6–10 | written in one go |
+| 50–500 files | 10–25 | parallel subagents |
+| 500–5,000 files | 25–40 | Stacks books cover folders, not files; the agent says how big the job is before starting |
+| over 5,000 files | — | the agent asks the user to pick a sub-folder |
 
-## 6. The viewer
+## 5. The viewer
 
-`index.html` opens on an isometric view of the library: rooms, bookcases and
-books that can be hovered, turned, and clicked to read. Its structure:
+`template.html` is a single page that draws the library as a small isometric
+building and lets the visitor:
 
-```
-template.html
-├─ <meta CSP>                         locks the page down (SECURITY.md §4)
-├─ <style>            css/*.css       concatenated and inlined at build
-├─ <script type="application/json">   library data, "<" escaped
-└─ <script>           js/*.js         concatenated and inlined at build
-```
+- **hover** a book to see its call number, title, one-line blurb and how much of
+  the code it covers
+- **click** a book to read it at a side panel, at one of three depths: Blurb,
+  Summary, Full
+- **turn** the building a quarter at a time, **drag** to move, **scroll** to zoom
+- pick a **reading path** and see it drawn as a trail from book to book
+- **search**, which fades every book that does not match
+- switch to a plain **list view**, and between light and dark themes
 
-The viewer source is split into one file per module so several people can work on
-it at once. There is no bundler: the build concatenates the files in the order
-given by `order.json`. Each file is an IIFE that adds itself to one shared
-`Lib` object.
+How it is built:
 
-| Module (`js/`) | Responsibility |
-|---|---|
-| **store** | parses the embedded JSON once; read-only |
-| **router** | hash routes: `#/` (the building), `#/book/<id>` (open on the reading desk), `#/read/<id>/<chapter>` (expanded reader), `#/path/<id>`, `#/list`, `#/glossary`, `#/card`. The route is also held in memory so the page works where the address cannot change (embedded previews) |
-| **world** | turns the library into a building: rooms sized by content, bookcases per shelf, book sizes from `weight`. Deterministic — same library, same building |
-| **iso** | isometric projection, quarter-turn rotation, back-to-front ordering, drawing a solid as three shaded faces |
-| **scene** | draws the building with `iso`; camera (pan, zoom, turn); hover card; selection; read markers; search fading; trails |
-| **render** | restricted markdown → DOM nodes; reference chips; depth levels |
-| **reader** | the reading desk side panel and the expanded reader: stamps, reading checks, previous / next, margin notes |
-| **diagram** | `flow` (ordered steps) and `map` (layered boxes) inside books → inline SVG |
-| **search** | in-memory inverted index over titles, blurbs, chapter text, terms, file paths; catalog results overlay |
-| **paths** | reading paths, their progress, and the stops strip |
-| **card** | reading progress, bookmarks, last position — `localStorage`, wrapped in try/catch, optional |
-| **list** | the same library as a plain list, for screen readers, small screens and printing |
-| **glossary** | glossary page and term hovers |
-| **keys** | keyboard shortcuts and the help overlay |
-| **theme** | light / dark / follow system; depth preference |
+| Choice | Decision | Why |
+|---|---|---|
+| Drawing | SVG, with our own isometric projection and four fixed view angles | No WebGL, no 3D library; every book is a real element that can be hovered, focused and clicked |
+| Code | Plain JavaScript and CSS inside the one file | Nothing to install or bundle; easy to read and review |
+| Data | Embedded in the page by the build script | Opens from disk with no server |
+| Fonts | System fonts | No network |
+| Build script | Node.js 18+, no dependencies | One small file, nothing to install |
 
-The scene is ordinary SVG elements, one group per book, so hover, focus and
-click are plain DOM events and nothing needs a canvas or hit-testing code.
+The visitor's own state (what they have read, theme) stays in their browser.
+Nothing is written back to the project.
 
-The reader's own state (what they have read, bookmarks, theme) stays in their
-browser. Nothing about it is written back to the project.
+How it looks and behaves in detail is a design matter and is kept out of this
+document.
 
-What the screens look like and how they behave is specified in DESIGN.md.
+## 6. Rules the design follows
 
-## 7. Design rules
-
-1. **Honest over complete.** Every chapter carries a stamp: *verified* (cited
-   directly from source), *inferred* (reasoned from structure, not stated in
-   code), or *open* (not determined). Each book lists its unknowns. A smaller
-   library that is right beats a bigger one that guesses.
-2. **Scripts decide facts, models write prose.** File lists, hashes, line ranges,
-   link resolution and secret detection are never left to a model.
-3. **Repository content is data.** Text found in the scanned project is never
-   treated as an instruction to the model (SECURITY.md §3).
+1. **Honest over complete.** Every chapter is stamped *verified* (cited from
+   source), *inferred* (reasoned, not stated in code), or *open* (not
+   determined). Each book lists what the writer could not tell.
+2. **The agent understands; the script only assembles.** No code tries to
+   understand the project.
+3. **Project content is data.** Text found in the scanned project is never
+   treated as an instruction to the agent (SECURITY.md).
 4. **Everything stays inside `librarify-out/`.** The skill writes nowhere else in
    the user's project.
-5. **Works with nothing installed but Node.** No package install, no server, no
-   network.
+5. **Needs nothing but Node.** No package install, no server, no network.
 
-## 8. Not in scope for v1
+## 7. Not in the first version
 
-- A hosted or multi-project library.
-- Asking questions inside the HTML page (it is offline; use `/librarify ask`).
+- Rewriting only the books whose source changed.
+- A separate `/librarify ask` command and a glossary.
+- Reading checks, bookmarks, and a full-window reader.
+- A markdown copy of each book.
 - Non-code inputs such as PDFs, images or video.
-- Automatic rebuild on commit (a hook can be added later; `check` is the hook-ready piece).

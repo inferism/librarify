@@ -3,6 +3,7 @@ TASK.md
 DESIGN.md
 WORKFLOW.md
 mockup/
+.serena
 
 # Output of running librarify on this repo
 librarify-out/
