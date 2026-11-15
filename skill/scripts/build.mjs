@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
-import { mkdtemp, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises';
+import { lstat, mkdtemp, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const prefixes = { lobby: 'LOB', architecture: 'ARC', workflow: 'WRK', security: 'SEC', stacks: 'STK', workshop: 'WSH' };
-const secret = /-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY-----|\b(?:AKIA|ASIA)[A-Z0-9]{16}\b|\bgh[pousr]_[A-Za-z0-9]{36,}\b|\bgithub_pat_[A-Za-z0-9_]{22,}\b|\bxox[baprs]-[A-Za-z0-9-]{10,}\b|\bsk_(?:live|test)_[A-Za-z0-9]{16,}\b|\bsk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{20,}\b|\bAIza[A-Za-z0-9_-]{35}\b/;
+const secret = /-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY(?: BLOCK)?-----|\b(?:AKIA|ASIA)[A-Z0-9]{16}\b|\bgh[pousr]_[A-Za-z0-9]{36,}\b|\bgithub_pat_[A-Za-z0-9_]{22,}\b|\bxox[baprs]-[A-Za-z0-9-]{10,}\b|\bsk_(?:live|test)_[A-Za-z0-9]{16,}\b|\bsk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{20,}\b|\bAIza[A-Za-z0-9_-]{35}\b/;
 
 function check(condition, field, rule) {
   if (!condition) throw new Error(`${field}: ${rule}. Fix library.json and build again.`);
@@ -137,6 +137,11 @@ function validate(library) {
 }
 
 async function build(folder) {
+  // realpath follows links, so check the folder itself first: a symlinked or junctioned
+  // output folder would send index.html somewhere outside the project.
+  if ((await lstat(folder.replace(/(?<=.)[\\/]+$/, ''))).isSymbolicLink()) {
+    throw new Error('The output folder is a link (symlink or junction), so writing to it could land outside the project. Remove the link and build into a real folder; nothing was written.');
+  }
   const directory = await realpath(folder);
   const input = await readFile(join(directory, 'library.json'), 'utf8');
   let library;

@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const script = new URL('../skill/scripts/build.mjs', import.meta.url);
 const sample = JSON.parse(await readFile(new URL('../examples/sample-library.json', import.meta.url), 'utf8'));
-// X2 supplies the real viewer; this exercises the same data marker and script hashing.
+// Keep builder checks isolated; viewer.test.mjs exercises the production template.
 const template = `<!doctype html><html><head><meta charset="utf-8"><title>Library</title></head><body>
 <h1></h1><script type="application/json" id="library-data">{{LIBRARY_JSON}}</script>
 <script>const library = JSON.parse(document.getElementById('library-data').textContent);
@@ -146,7 +146,7 @@ test('rejects invalid format fields, limits, paths and references without replac
 
 test('blocks common secrets anywhere in JSON without echoing their values or writing HTML', async t => {
   const f = await fixture(t);
-  const tokens = ['-----BEGIN PRIVATE KEY-----', '-----BEGIN RSA PRIVATE KEY-----', 'AKIA' + 'A'.repeat(16), 'ghp_' + 'a'.repeat(36), 'github_pat_' + 'a'.repeat(40), 'xoxb-' + '1'.repeat(25), 'sk_live_' + 'a'.repeat(24), 'sk-proj-' + 'a'.repeat(40), 'AIza' + 'a'.repeat(35)];
+  const tokens = ['-----BEGIN PRIVATE KEY-----', '-----BEGIN RSA PRIVATE KEY-----', '-----BEGIN PGP PRIVATE KEY BLOCK-----', 'AKIA' + 'A'.repeat(16), 'ghp_' + 'a'.repeat(36), 'github_pat_' + 'a'.repeat(40), 'xoxb-' + '1'.repeat(25), 'sk_live_' + 'a'.repeat(24), 'sk-proj-' + 'a'.repeat(40), 'AIza' + 'a'.repeat(35)];
   for (const token of tokens) {
     for (const location of ['book', 'project', 'key']) {
       const library = structuredClone(sample);
@@ -209,6 +209,22 @@ test('replaces an output symlink without following it', async t => {
   await f.input(sample);
   assert.equal(f.run().status, 0);
   assert.equal(await readFile(outside, 'utf8'), 'do not overwrite');
+});
+
+test('refuses a linked output folder without writing through it', async t => {
+  const f = await fixture(t);
+  const outside = join(f.root, 'outside');
+  await mkdir(outside);
+  await writeFile(join(outside, 'library.json'), JSON.stringify(sample));
+  const linked = join(f.root, 'linked');
+  // A junction needs no Windows privileges; elsewhere this is an ordinary directory symlink.
+  await symlink(outside, linked, 'junction');
+  for (const target of [linked, linked + '/']) {
+    const result = f.run([target]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /output folder is a link/);
+    assert.deepEqual(await readdir(outside), ['library.json']);
+  }
 });
 
 test('a failed output replacement preserves existing files and cleans up temporary output', async t => {
