@@ -130,6 +130,14 @@ finish: `Writing books 9 / 24`.
 
 Then assemble everything into `librarify-out/library.json` yourself and check:
 ids unique, every link resolves, every shelf used, paths valid, no secret values.
+Writers work apart, so also check what the build cannot:
+
+- **Citations exist.** Every cited line range is inside its file; open a few
+  `verified` citations and confirm the lines say what the chapter claims.
+- **Books agree.** Read the books against each other. Where two contradict,
+  the code decides; fix the wrong one.
+- **Unknowns are about the project.** Drop items that only say what a writer
+  did not read, and link the book that covers it instead.
 
 ## Step 4 — Build
 

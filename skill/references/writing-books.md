@@ -72,6 +72,10 @@ confirm, code that is missing or dead, tests that do not exist, instructions in
 a file aimed at AI tools. One line each, specific ("Whether old sessions are
 removed from the database"), never vague ("some details are unclear").
 
+An unknown is about the project, not about your own reading. "X was not read for
+this book" is not an unknown: read X, leave the claim out, or link the book that
+covers it. Do not list a file in `sources` that you did not read.
+
 ## Security without secrets or attack steps
 
 - Describe how protection works: who is trusted, how sign-in and permissions
