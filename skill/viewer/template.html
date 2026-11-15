@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project library</title>
+<style>
+:root{
+  --paper:#F7F3EA; --surface:#FFFDF8; --ink:#1E1A15; --ink-soft:#5F574B; --rule:#DDD5C5; --accent:#8A2F2B;
+  --brass:#8E6219; --navy:#27496D; --forest:#2F5D45; --oxblood:#7A2A2A; --slate:#4A5560; --plum:#5E3A63;
+  --green:#2F6B46; --amber:#8A5A12; --floor:#EDE4D1; --wall:#FBF7EE; --wood:#B58E5E; --band:#FFFDF8;
+  --shadow:0 12px 40px rgba(30,26,21,.22);
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
+}
+:root[data-theme=dark]{
+  --paper:#16130F; --surface:#1F1B16; --ink:#EDE6D8; --ink-soft:#A89F8F; --rule:#3A342B; --accent:#E08A7E;
+  --brass:#D9A441; --navy:#7FA7D6; --forest:#7DB899; --oxblood:#D98880; --slate:#9AA7B4; --plum:#B992BF;
+  --green:#7DB899; --amber:#D9A441; --floor:#2B261F; --wall:#3B352C; --wood:#7A5C3A; --band:#16130F;
+  --shadow:0 12px 40px rgba(0,0,0,.6);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --paper:#16130F; --surface:#1F1B16; --ink:#EDE6D8; --ink-soft:#A89F8F; --rule:#3A342B; --accent:#E08A7E;
+  --brass:#D9A441; --navy:#7FA7D6; --forest:#7DB899; --oxblood:#D98880; --slate:#9AA7B4; --plum:#B992BF;
+  --green:#7DB899; --amber:#D9A441; --floor:#2B261F; --wall:#3B352C; --wood:#7A5C3A; --band:#16130F;
+  --shadow:0 12px 40px rgba(0,0,0,.6);
+}}
+.w-lobby{--wc:var(--brass)} .w-architecture{--wc:var(--navy)} .w-workflow{--wc:var(--forest)}
+.w-security{--wc:var(--oxblood)} .w-stacks{--wc:var(--slate)} .w-workshop{--wc:var(--plum)}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:.94rem;line-height:1.5;display:flex;flex-direction:column;overflow:hidden}
+button,select,input{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+.mono{font-family:var(--mono);font-size:.78rem;letter-spacing:.05em}
+.soft{color:var(--ink-soft)}
+[hidden]{display:none!important}
+.brand{min-width:0;max-width:32%}.brand>span{overflow:hidden;text-overflow:ellipsis}
+.brand i{flex-shrink:0}.field select{max-width:200px}
+.storage-note{position:fixed;left:16px;top:60px;margin:0;padding:6px 10px;background:var(--surface);border:1px solid var(--rule);border-radius:8px;font-size:.78rem;z-index:5}
+button:disabled{opacity:.4;cursor:default}
+
+header.bar{flex:none;display:flex;align-items:center;gap:12px;height:56px;padding:0 16px;background:var(--surface);border-bottom:1px solid var(--rule)}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-size:1.15rem;font-weight:600;white-space:nowrap}
+.brand i{display:inline-flex;gap:2px;align-items:flex-end;height:20px}
+.brand i b{display:block;width:5px;border-radius:1px}
+.pill{font-size:.7rem;padding:2px 8px;border:1px dashed var(--ink-soft);border-radius:99px;color:var(--ink-soft);white-space:nowrap}
+.grow{flex:1}
+.field{display:flex;align-items:center;gap:6px;height:36px;padding:0 10px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);font-size:.84rem;color:var(--ink-soft)}
+.field input,.field select{border:0;background:transparent;outline:none;color:var(--ink);min-width:0}
+.field input{width:150px}
+.field:focus-within{border-color:var(--accent)}
+.ibtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;min-width:36px;padding:6px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--surface);font-size:.84rem;color:var(--ink-soft);white-space:nowrap}
+.ibtn:hover{color:var(--ink);border-color:var(--ink-soft)}
+
+.stage{flex:1;display:flex;min-height:0}
+.library-view{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;min-height:0}
+.list-view{flex:1;min-height:0;overflow:auto;padding:16px 24px 32px;overflow-wrap:anywhere}
+.list-view h2{font-family:var(--serif);color:var(--wc);margin:20px 0 8px}
+.list-view ul{list-style:none;margin:0;padding:0}
+.list-book{display:grid;grid-template-columns:6rem 1fr auto;gap:4px 12px;width:100%;padding:14px 8px;border-bottom:1px solid var(--rule);text-align:left;white-space:normal}
+.list-book:hover,.list-book[aria-pressed=true]{background:var(--surface)}
+.list-book strong{font-family:var(--serif);font-size:1.12rem}
+.list-book .blurb{grid-column:2/4;color:var(--ink-soft)}
+.read-state{font-size:.8rem;color:var(--ink-soft)}
+.shortcuts{max-width:min(480px,calc(100% - 24px));max-height:85%;overflow:auto;background:var(--surface);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:20px}
+.shortcuts::backdrop{background:rgba(0,0,0,.4)}
+.shortcuts h2{margin-top:0;font-family:var(--serif)}
+.shortcuts dl{display:grid;grid-template-columns:auto 1fr;gap:8px 16px}.shortcuts dd{margin:0}
+.scene{position:relative;flex:1;min-width:0;overflow:hidden;background:
+  radial-gradient(ellipse at 50% 42%, var(--surface) 0%, var(--paper) 70%)}
+#svg{display:block;width:100%;height:100%;cursor:grab;touch-action:none;user-select:none}
+#svg.drag{cursor:grabbing}
+
+/* isometric solids */
+.bx polygon{stroke:color-mix(in srgb,var(--c) 58%,#000);stroke-width:.6;stroke-linejoin:round}
+.bx .ft{fill:var(--c)}
+.bx .fl{fill:color-mix(in srgb,var(--c) 84%,#000)}
+.bx .fr{fill:color-mix(in srgb,var(--c) 66%,#000)}
+.c-floor{--c:var(--floor)} .c-wall{--c:var(--wall)} .c-wood{--c:var(--wood)} .c-accent{--c:var(--accent)}
+.tile{stroke:var(--ink-soft);stroke-width:.5;opacity:.13}
+.carpet{fill:color-mix(in srgb,var(--wc) 16%,transparent);stroke:var(--wc);stroke-width:1.3;stroke-linejoin:round;transition:fill .15s}
+.carpet:hover,.carpet.on{fill:color-mix(in srgb,var(--wc) 30%,transparent)}
+.book{--c:var(--wc);cursor:pointer;transition:transform .14s ease-out,opacity .2s;outline:none}
+.book:hover,.book:focus-visible,.book.sel{transform:translateY(-10px)}
+.book:hover polygon,.book:focus-visible polygon,.book.sel polygon{stroke:var(--ink);stroke-width:1.2}
+.book.dim{opacity:.16}
+.book .bandf{fill:var(--band);opacity:.5;stroke:none}
+.rise{animation:rise .5s cubic-bezier(.2,.9,.3,1) backwards}
+@keyframes rise{from{transform:translateY(-46px);opacity:0}}
+.deskobj{cursor:pointer}
+.deskobj:hover polygon{stroke:var(--ink);stroke-width:1.2}
+.sign rect{fill:var(--surface);stroke:var(--wc);stroke-width:1.2}
+.sign .sw{fill:var(--wc);stroke:none}
+.sign text{font-family:var(--sans);font-size:11px;font-weight:600;fill:var(--ink);letter-spacing:.06em}
+.sign .ct{font-weight:400;fill:var(--ink-soft)}
+.sign{pointer-events:none}
+.route{fill:none;stroke:var(--accent);stroke-width:2.4;stroke-dasharray:2 7;stroke-linecap:round;animation:walk 1.2s linear infinite;pointer-events:none}
+@keyframes walk{to{stroke-dashoffset:-18}}
+.stop circle{fill:var(--accent);stroke:var(--surface);stroke-width:1.5}
+.stop text{fill:var(--surface);font-family:var(--sans);font-size:10px;font-weight:700;text-anchor:middle}
+.stop{pointer-events:none}
+
+/* overlays on the scene */
+.hint{position:absolute;left:16px;bottom:14px;font-size:.78rem;color:var(--ink-soft);background:color-mix(in srgb,var(--surface) 86%,transparent);border:1px solid var(--rule);border-radius:8px;padding:8px 12px;line-height:1.7}
+kbd{font-family:var(--mono);font-size:.7rem;padding:1px 5px;border:1px solid var(--rule);border-radius:4px;background:var(--surface)}
+.ctrl{position:absolute;right:16px;bottom:14px;display:flex;gap:6px}
+.stops{flex:none;align-self:center;display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;max-width:calc(100% - 32px);max-height:25%;overflow:auto;margin:8px 16px;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:6px 10px;font-size:.8rem;box-shadow:var(--shadow)}
+.stops[hidden]{display:none}
+.stops button{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px}
+.stops button:hover{background:var(--paper)}
+.stops button i{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--accent);color:var(--surface);font-style:normal;font-size:.68rem;font-weight:700}
+.stops button.done{color:var(--ink-soft);text-decoration:line-through}
+#tip{position:fixed;z-index:9;max-width:290px;padding:10px 12px;border-radius:8px;background:var(--ink);color:var(--surface);font-size:.82rem;pointer-events:none;box-shadow:var(--shadow)}
+#tip[hidden]{display:none}
+#tip .cn{font-family:var(--mono);font-size:.7rem;opacity:.75;letter-spacing:.06em}
+#tip b{font-family:var(--serif);font-size:1rem;display:block;margin:1px 0 3px}
+#tip em{display:block;font-style:normal;opacity:.7;margin-top:6px;font-size:.74rem}
+
+/* reading desk */
+aside.desk{flex:none;width:min(430px,100%);border-left:1px solid var(--rule);background:var(--surface);display:flex;flex-direction:column;min-height:0}
+aside.desk[hidden]{display:none}
+.deskhead{flex:none;display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--rule)}
+.cn{font-family:var(--mono);font-size:.78rem;letter-spacing:.06em;color:var(--wc);border:1px solid var(--wc);border-radius:3px;padding:1px 6px}
+.dial{display:flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--paper)}
+.dial button{padding:5px 10px;font-size:.78rem;color:var(--ink-soft)}
+.dial button[aria-pressed=true]{background:var(--ink);color:var(--surface)}
+.deskbody{flex:1;overflow:auto;padding:20px 22px 28px}
+.deskbody h1{font-family:var(--serif);font-size:1.7rem;line-height:1.15;margin:0 0 10px;font-weight:600}
+.deskbody{overflow-wrap:anywhere}.prose p{white-space:pre-wrap}
+.booklink{padding:0;color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+.source{margin-top:16px;padding:12px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);font-size:.82rem}
+.source input{display:block;width:100%;margin:8px 0;background:var(--surface);border:1px solid var(--rule);padding:8px;font-family:var(--mono);font-size:.75rem}
+.source .ibtn{margin-right:8px}.chip{display:inline;white-space:normal;overflow-wrap:anywhere;text-align:left}
+.hint.dismissed{opacity:0;pointer-events:none}.route.floor-route{opacity:.5}
+.deskobj.rise{animation:bell .5s ease-out 1s backwards}@keyframes bell{from{transform:translateY(-8px)}}
+.lede{font-family:var(--serif);font-size:1.12rem;line-height:1.45;margin:0 0 14px}
+.prose{font-family:var(--serif);font-size:1rem;line-height:1.65}
+.prose p{margin:0 0 .9em}
+.chap{margin-top:26px}
+.chap header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.chap h2{font-family:var(--serif);font-size:1.12rem;margin:0;flex:1;font-weight:600}
+.stamp{font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;padding:2px 7px;border-radius:3px;border:1.5px solid currentColor;white-space:nowrap;transform:rotate(-1.5deg)}
+.stamp.verified{color:var(--green)} .stamp.inferred{color:var(--amber);border-style:dashed} .stamp.open{color:var(--ink-soft);border-style:dotted}
+.chip{font-family:var(--mono);font-size:.7rem;padding:1px 7px;border:1px solid var(--rule);border-radius:99px;background:var(--paper);color:var(--ink-soft);white-space:normal}
+.note{border:1px dashed var(--rule);border-radius:8px;padding:12px 14px;color:var(--ink-soft);font-size:.86rem;margin-top:22px}
+.boxed{border:1px solid var(--rule);border-radius:8px;background:var(--paper);padding:14px 16px;margin-top:26px}
+.boxed h3{font-family:var(--serif);font-size:1rem;margin:0 0 8px}
+.boxed ul{margin:0;padding-left:18px;color:var(--ink-soft);font-size:.9rem}
+.deskfoot{flex:none;display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--rule)}
+.deskfoot .ibtn{flex:1}
+@media (max-width:820px){
+  .stage{flex-direction:column}
+  aside.desk{width:100%;height:55%;border-left:0;border-top:1px solid var(--rule)}
+  header.bar{height:auto;min-height:56px;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;padding:8px}
+  .brand{max-width:100%}.bar>.grow,.pill,.hint{display:none}
+  .search-field{grid-row:2;grid-column:1/3;min-width:0}.path-field{grid-row:2;grid-column:3;min-width:0;max-width:220px}
+  #qn{white-space:nowrap;font-size:.75rem}
+  .field{height:44px;padding:0 8px}.field input,.field select{width:0;flex:1;max-width:100%}
+  .ibtn{min-width:44px;min-height:44px}.stops button,.dial button{min-height:44px}
+  .chip,.booklink{display:inline-block;min-height:44px;padding:8px}
+  .ctrl{right:8px;bottom:8px;gap:4px}.ctrl .ibtn{padding:6px}
+  .deskhead{display:grid;grid-template-columns:1fr auto;gap:6px;padding:8px}.deskhead>.grow{display:none}
+  .deskhead>.cn{justify-self:start}.dial{grid-row:2;grid-column:1/3}.dial button{flex:1}
+  .deskbody{padding:16px}.deskfoot{padding:8px}.deskfoot .ibtn{white-space:normal}
+  .list-view{padding:8px 12px 24px}.list-book{grid-template-columns:1fr auto;gap:4px 8px}
+  .list-book strong,.list-book .blurb{grid-column:1/3}.list-book .read-state{grid-row:1;grid-column:2}
+  .storage-note{position:static;flex:none;margin:0;border-radius:0}
+}
+@media (prefers-reduced-motion:reduce){.rise,.route{animation:none}.book{transition:none}}
+@media print{
+  html,body{height:auto;overflow:visible}.stage,.library-view{display:block}
+  header.bar,#scene,#desk,#stops,#tip,#storageNote,#shortcuts{display:none!important}
+  #listView[hidden],#listView [hidden]{display:block!important}
+  .list-view{overflow:visible;padding:0}.list-book{break-inside:avoid;color:#000}.list-view h2{color:#000}
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><i aria-hidden="true"><b style="height:14px;background:var(--navy)"></b><b style="height:20px;background:var(--oxblood)"></b><b style="height:16px;background:var(--forest)"></b><b style="height:19px;background:var(--brass)"></b></i><span id="projectName"></span></div>
+  <span class="pill" id="projectStats"></span>
+  <span class="grow"></span>
+  <label class="field search-field">⌕ <input id="q" type="text" placeholder="Find a book…" autocomplete="off" spellcheck="false" aria-label="Find a book"><span id="qn" role="status" aria-live="polite"></span></label>
+  <label class="field path-field">Path <select id="pathSel" aria-label="Reading path"></select></label>
+  <button class="ibtn" id="viewBtn" aria-controls="scene listView" aria-label="Switch to list view" title="Switch view (L)">☰ List</button>
+  <button class="ibtn" id="themeBtn" aria-label="Change theme"></button>
+</header>
+
+<div class="stage">
+  <div class="library-view">
+    <div class="stops" id="stops" hidden></div>
+  <div class="scene" id="scene">
+    <svg id="svg" role="group" aria-label="Isometric view of the library. Each wing is a room; each block on a shelf is a book."></svg>
+    <div class="hint" id="hint"><b>Hover</b> a book to see what it covers · <b>click</b> to read it<br><b>Drag</b> to move · <b>scroll</b> to zoom · <kbd>Q</kbd> <kbd>E</kbd> to turn the room</div>
+    <div class="ctrl">
+      <button class="ibtn" id="rotL" title="Turn left (Q)" aria-label="Turn left">⟲</button>
+      <button class="ibtn" id="rotR" title="Turn right (E)" aria-label="Turn right">⟳</button>
+      <button class="ibtn" id="zIn" title="Zoom in" aria-label="Zoom in">+</button>
+      <button class="ibtn" id="zOut" title="Zoom out" aria-label="Zoom out">−</button>
+      <button class="ibtn" id="zFit" title="Fit to screen" aria-label="Fit to screen">⤢</button>
+    </div>
+  </div>
+    <section class="list-view" id="listView" aria-label="Library by wing" tabindex="-1" hidden></section>
+  </div>
+  <aside class="desk" id="desk" aria-label="Reading desk" hidden></aside>
+</div>
+<div id="tip" role="tooltip" hidden></div>
+<p id="storageNote" class="storage-note" role="status" hidden>Progress cannot be saved in this browser.</p>
+<dialog class="shortcuts" id="shortcuts" aria-labelledby="shortcutsTitle">
+  <h2 id="shortcutsTitle">Keyboard shortcuts</h2>
+  <dl>
+    <dt>Tab / Shift Tab</dt><dd>Move through controls and books, wing by wing and shelf by shelf</dd>
+    <dt>Enter / Space</dt><dd>Open a focused book or ring the bell</dd>
+    <dt>Q / E</dt><dd>Turn the building left / right</dd>
+    <dt>Arrow keys</dt><dd>Move the building view</dd>
+    <dt>+ / − / 0</dt><dd>Zoom in / out / fit</dd>
+    <dt>/</dt><dd>Focus search</dd>
+    <dt>1 / 2 / 3</dt><dd>Read the open book at Blurb / Summary / Full depth</dd>
+    <dt>j / k</dt><dd>Next / previous book or trail stop</dd>
+    <dt>L</dt><dd>Switch between the building and the list</dd>
+    <dt>t</dt><dd>Cycle System / Day / Lamp theme</dd>
+    <dt>?</dt><dd>Show these shortcuts</dd>
+    <dt>Esc</dt><dd>Close the reading desk or shortcuts</dd>
+  </dl>
+  <p>Single-key shortcuts are off while typing in a field.</p>
+  <button class="ibtn" id="closeShortcuts">Close shortcuts</button>
+</dialog>
+
+<script type="application/json" id="library-data">{{LIBRARY_JSON}}</script>
+<script>
+(function () {
+'use strict';
+
+var library = JSON.parse(document.getElementById('library-data').textContent);
+var WINGS = {
+  lobby: ['Lobby', 'What is this and where do I start?'],
+  architecture: ['Architecture', 'What are the parts and how do they fit?'],
+  workflow: ['Workflow', 'What happens when…?'],
+  security: ['Security', 'What is protected, and how?'],
+  stacks: ['Stacks', 'What does this module do?'],
+  workshop: ['Workshop', 'How do I change…?']
+};
+var wings = Object.fromEntries(library.wings.map(function (w) { return [w.id, w]; }));
+var BOOKS = Object.keys(WINGS).flatMap(function (id) {
+  return wings[id] ? wings[id].shelves.flatMap(function (shelf) {
+    return library.books.filter(function (b) { return b.wing === id && b.shelf === shelf; });
+  }) : [];
+});
+var PATHS = library.paths;
+var byId = Object.fromEntries(BOOKS.map(function (b) { return [b.id, b]; }));
+
+function h(tag, attrs) { var el = document.createElement(tag); fill(el, attrs, arguments); return el; }
+function s(tag, attrs) { var el = document.createElementNS('http://www.w3.org/2000/svg', tag); fill(el, attrs, arguments); return el; }
+function fill(el, attrs, args) {
+  Object.keys(attrs || {}).forEach(function (key) {
+    var value = attrs[key];
+    if (value == null || value === false) return;
+    if (key === 'text') el.textContent = value;
+    else if (key.slice(0, 2) === 'on') el.addEventListener(key.slice(2), value);
+    else el.setAttribute(key, value === true ? '' : value);
+  });
+  for (var i = 2; i < args.length; i++) {
+    var child = args[i];
+    if (child != null && child !== false) el.append.apply(el, Array.isArray(child) ? child : [child]);
+  }
+}
+function $(id) { return document.getElementById(id); }
+function hash(str) { var n = 0; for (var i = 0; i < str.length; i++) n = (n * 31 + str.charCodeAt(i)) % 97; return n; }
+function thickness(b) { return Math.min(2.1, Math.max(.85, .55 + b.weight * 10)); }
+
+var narrow = matchMedia('(max-width:559px)'), explicitView = false, routing = false;
+var S = { rot: 0, path: '', query: '', open: null, depth: 2, read: Object.create(null), theme: 'system', first: true, last: null, list: narrow.matches };
+var storageKey = 'librarify:' + JSON.stringify([library.project.name, library.project.description]);
+try {
+  var saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
+  if ([1, 2, 3].includes(saved.depth)) S.depth = saved.depth;
+  if (['system', 'light', 'dark'].includes(saved.theme)) S.theme = saved.theme;
+  BOOKS.forEach(function (b) {
+    if (saved.read && ['started', 'read'].includes(saved.read[b.id])) S.read[b.id] = saved.read[b.id];
+  });
+  if (Object.hasOwn(byId, saved.last)) S.last = saved.last;
+} catch { $('storageNote').hidden = false; }
+function save() {
+  try { localStorage.setItem(storageKey, JSON.stringify({ depth: S.depth, theme: S.theme, read: S.read, last: S.last })); }
+  catch { $('storageNote').hidden = false; }
+}
+
+/* Pack each shelf into cases, then give each case its own floor space. */
+var U = 28, COS = Math.sqrt(3) / 2, RD = 4.6, GAP = 1.5;
+var plans = Object.keys(WINGS).filter(function (id) { return wings[id]; }).map(function (id) {
+  var cases = [];
+  wings[id].shelves.forEach(function (shelf) {
+    var books = [], width = 0;
+    BOOKS.filter(function (b) { return b.wing === id && b.shelf === shelf; }).forEach(function (b) {
+      var size = thickness(b) + .08;
+      if (books.length && width + size > 9) { cases.push({ shelf: shelf, books: books, width: width }); books = []; width = 0; }
+      books.push(b); width += size;
+    });
+    if (books.length) cases.push({ shelf: shelf, books: books, width: width });
+  });
+  var columns = Math.min(2, cases.length);
+  var widths = Array.from({ length: columns }, function (_, col) {
+    return Math.max.apply(null, cases.filter(function (_, i) { return i % columns === col; }).map(function (c) { return c.width + 1.4; }));
+  });
+  return { wing: id, cases: cases, columns: columns, widths: widths,
+    w: Math.max(id === 'lobby' ? 6.6 : 4.4, widths.reduce(function (n, w) { return n + w; }, 0) + (columns - 1) * GAP),
+    d: Math.ceil(cases.length / columns) * RD };
+});
+var caseCount = plans.reduce(function (n, room) { return n + room.cases.length; }, 0);
+var layout = caseCount > 9 ? [['architecture', 'workflow'], ['security', 'stacks'], ['lobby', 'workshop']]
+  : [['architecture', 'workflow', 'security'], ['lobby', 'stacks', 'workshop']];
+var rows = layout.map(function (ids) {
+  var rooms = ids.map(function (id) { return plans.find(function (r) { return r.wing === id; }); }).filter(Boolean);
+  return { rooms: rooms, w: rooms.reduce(function (n, r) { return n + r.w; }, 0) + Math.max(0, rooms.length - 1) * GAP,
+    d: Math.max.apply(null, rooms.map(function (r) { return r.d; })) };
+}).filter(function (row) { return row.rooms.length; });
+var WW = Math.max.apply(null, rows.map(function (r) { return r.w; }));
+var DD = rows.reduce(function (n, r) { return n + r.d; }, 0) + (rows.length - 1) * GAP;
+var CX = WW / 2, CY = DD / 2, ROOMS = [], y0 = 0;
+rows.forEach(function (row) {
+  var x0 = (WW - row.w) / 2;
+  row.rooms.forEach(function (rm) {
+    var room = { wing: rm.wing, box: { x0: x0, x1: x0 + rm.w, y0: y0, y1: y0 + rm.d, z0: 0, z1: 0 }, units: [] };
+    rm.cases.forEach(function (c, i) {
+      var col = i % rm.columns, x = x0 + .7 + (col ? rm.widths[0] + GAP : 0), start = x;
+      var y = y0 + Math.floor(i / rm.columns) * RD + .9, z = .25;
+      var items = [{ box: { x0: x, x1: x + .16, y0: y, y1: y + 1.2, z0: z, z1: z + 2.9 }, cls: 'c-wood' }];
+      x += .22;
+      c.books.forEach(function (b) {
+        items.push({ box: { x0: x, x1: x + thickness(b), y0: y + .1, y1: y + 1.1, z0: z, z1: z + 1.9 + hash(b.id) % 5 * .17 }, book: b });
+        x += thickness(b) + .08;
+      });
+      items.push({ box: { x0: x, x1: x + .16, y0: y, y1: y + 1.2, z0: z, z1: z + 2.9 }, cls: 'c-wood' });
+      room.units.push({ base: { x0: start - .1, x1: x + .26, y0: y - .06, y1: y + 1.26, z0: 0, z1: z }, items: items, shelf: c.shelf });
+    });
+    if (rm.wing === 'lobby') room.units.push({ base: { x0: x0 + rm.w - 3, x1: x0 + rm.w - .7, y0: y0 + rm.d - 1.9, y1: y0 + rm.d - .8, z0: 0, z1: .95 }, items: [], desk: true });
+    ROOMS.push(room); x0 += rm.w + GAP;
+  });
+  y0 += row.d + GAP;
+});
+
+function rot(x, y) {
+  var dx = x - CX, dy = y - CY;
+  return S.rot === 0 ? [x, y] : S.rot === 1 ? [CX - dy, CY + dx] : S.rot === 2 ? [CX - dx, CY - dy] : [CX + dy, CY - dx];
+}
+function R(b) {
+  var p = rot(b.x0, b.y0), q = rot(b.x1, b.y1);
+  return { x0: Math.min(p[0], q[0]), x1: Math.max(p[0], q[0]), y0: Math.min(p[1], q[1]), y1: Math.max(p[1], q[1]), z0: b.z0, z1: b.z1 };
+}
+function P(x, y, z) { return [(x - y) * COS * U, (x + y) * .5 * U - (z || 0) * U]; }
+function depth(b) { return (b.x0 + b.x1 + b.y0 + b.y1) / 2; }
+function pts(a) { return a.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' '); }
+function solid(b, cls) {
+  return s('g', { class: 'bx ' + (cls || '') },
+    s('polygon', { class: 'fl', points: pts([P(b.x0, b.y1, b.z1), P(b.x1, b.y1, b.z1), P(b.x1, b.y1, b.z0), P(b.x0, b.y1, b.z0)]) }),
+    s('polygon', { class: 'fr', points: pts([P(b.x1, b.y0, b.z1), P(b.x1, b.y1, b.z1), P(b.x1, b.y1, b.z0), P(b.x1, b.y0, b.z0)]) }),
+    s('polygon', { class: 'ft', points: pts([P(b.x0, b.y0, b.z1), P(b.x1, b.y0, b.z1), P(b.x1, b.y1, b.z1), P(b.x0, b.y1, b.z1)]) }));
+}
+function band(b) {
+  var za = b.z0 + (b.z1 - b.z0) * .72, zb = b.z0 + (b.z1 - b.z0) * .82;
+  return [s('polygon', { class: 'bandf', points: pts([P(b.x0, b.y1, zb), P(b.x1, b.y1, zb), P(b.x1, b.y1, za), P(b.x0, b.y1, za)]) }),
+    s('polygon', { class: 'bandf', points: pts([P(b.x1, b.y0, zb), P(b.x1, b.y1, zb), P(b.x1, b.y1, za), P(b.x1, b.y0, za)]) })];
+}
+function activePath() { return PATHS.find(function (p) { return p.id === S.path; }); }
+function matches(b) {
+  return !S.query || [b.id, b.title, b.blurb, b.summary, b.shelf, WINGS[b.wing][0]].concat(b.sources,
+    (b.chapters || []).map(function (c) { return c.title + ' ' + c.body; }), b.unknowns || []).join(' ').toLowerCase().includes(S.query);
+}
+function initList() {
+  Object.keys(WINGS).filter(function (id) { return wings[id]; }).forEach(function (id) {
+    var section = h('section', { class: 'w-' + id, 'data-list-wing': id, 'aria-labelledby': 'heading-' + id },
+      h('h2', { id: 'heading-' + id, text: WINGS[id][0] }));
+    section.append(h('ul', null, BOOKS.filter(function (b) { return b.wing === id; }).map(function (b) {
+      return h('li', null, h('button', { class: 'list-book', 'data-list-book': b.id, onclick: function () { openBook(b.id); } },
+        h('span', { class: 'mono', text: b.id }), h('strong', { text: b.title }),
+        h('span', { class: 'read-state' }), h('span', { class: 'blurb', text: b.blurb })));
+    })));
+    $('listView').append(section);
+  });
+  $('listView').append(h('p', { id: 'listEmpty', role: 'status', hidden: true, text: 'No books match. Try another title, call number or source path.' }));
+}
+function renderList() {
+  $('listView').querySelectorAll('[data-list-book]').forEach(function (row) {
+    var id = row.dataset.listBook;
+    row.parentElement.hidden = !matches(byId[id]);
+    row.setAttribute('aria-pressed', String(S.open === id));
+    row.querySelector('.read-state').textContent = { read: 'Read', started: 'Started' }[S.read[id]] || 'Unread';
+  });
+  $('listView').querySelectorAll('[data-list-wing]').forEach(function (section) {
+    section.hidden = !BOOKS.some(function (b) { return b.wing === section.dataset.listWing && matches(b); });
+  });
+  $('listEmpty').hidden = BOOKS.some(matches);
+}
+function setView(list, user) {
+  if (user) explicitView = true;
+  S.list = list;
+  $('scene').hidden = list; $('listView').hidden = !list; $('tip').hidden = true;
+  $('viewBtn').textContent = list ? '▣ Building' : '☰ List';
+  $('viewBtn').setAttribute('aria-label', list ? 'Switch to building view' : 'Switch to list view');
+  if ((list ? $('scene') : $('listView')).contains(document.activeElement)) $('viewBtn').focus();
+  if (user) writeRoute();
+}
+function writeRoute() {
+  if (routing) return;
+  var params = new URLSearchParams();
+  if (S.list && S.open) params.set('book', S.open);
+  if (S.path) params.set('path', S.path);
+  var route = (S.list ? '#/list' : S.open ? '#/book/' + S.open : '#/') + (params.size ? '?' + params : '');
+  if (location.hash !== route) {
+    try { history.pushState(null, '', route); } catch { /* Previews can deny history; state stays in memory. */ }
+  }
+}
+function readRoute() {
+  var parts = (location.hash ? location.hash.slice(1) : narrow.matches ? '/list' : '/').split('?'), params = new URLSearchParams(parts[1] || '');
+  if (!/^\/(?:list|book\/(?:LOB|ARC|WRK|SEC|STK|WSH)-\d{3})?$/.test(parts[0])) return;
+  var id = parts[0].startsWith('/book/') ? parts[0].slice(6) : params.get('book');
+  explicitView = Boolean(location.hash); routing = true;
+  setView(parts[0] === '/list');
+  S.path = PATHS.some(function (p) { return p.id === params.get('path'); }) ? params.get('path') : '';
+  $('pathSel').value = S.path;
+  if (id && Object.hasOwn(byId, id)) openBook(id);
+  else if (S.open) closeBook();
+  else if (view) render();
+  routing = false;
+}
+var view = null, bounds = null, tops = {}, floors = {};
+function render() {
+  var svg = $('svg'), root = s('g'), n = 0;
+  var focused = svg.contains(document.activeElement) && document.activeElement.dataset.book;
+  var deskFocused = svg.contains(document.activeElement) && document.activeElement.dataset.desk;
+  var fb = R({ x0: -1.6, x1: WW + 1.6, y0: -1.6, y1: DD + 1.6, z0: -.7, z1: 0 });
+  root.append(solid(fb, 'c-floor'));
+  for (var i = Math.ceil(fb.x0); i < fb.x1; i++) root.append(s('line', { class: 'tile', x1: P(i, fb.y0)[0], y1: P(i, fb.y0)[1], x2: P(i, fb.y1)[0], y2: P(i, fb.y1)[1] }));
+  for (var j = Math.ceil(fb.y0); j < fb.y1; j++) root.append(s('line', { class: 'tile', x1: P(fb.x0, j)[0], y1: P(fb.x0, j)[1], x2: P(fb.x1, j)[0], y2: P(fb.x1, j)[1] }));
+  root.append(solid({ x0: fb.x0, x1: fb.x0 + .3, y0: fb.y0, y1: fb.y1, z0: 0, z1: 2.6 }, 'c-wall'),
+    solid({ x0: fb.x0 + .3, x1: fb.x1, y0: fb.y0, y1: fb.y0 + .3, z0: 0, z1: 2.6 }, 'c-wall'));
+  tops = {}; floors = {};
+  var units = [], signs = s('g');
+  ROOMS.forEach(function (r) {
+    var b = R(r.box), w = WINGS[r.wing];
+    root.append(s('polygon', { class: 'carpet w-' + r.wing, 'data-wing': r.wing, points: pts([P(b.x0, b.y0, .01), P(b.x1, b.y0, .01), P(b.x1, b.y1, .01), P(b.x0, b.y1, .01)]) }));
+    r.units.forEach(function (u) {
+      units.push({ u: u, b: R(u.base) });
+      u.items.forEach(function (item) {
+        if (!item.book) return;
+        var box = R(item.box), mx = (box.x0 + box.x1) / 2, my = (box.y0 + box.y1) / 2;
+        tops[item.book.id] = P(mx, my, box.z1 + .5);
+        floors[item.book.id] = P(mx, my, .03);
+      });
+    });
+    var count = BOOKS.filter(function (book) { return book.wing === r.wing; }).length;
+    var sp = P(b.x0 + .2, b.y0 + .2, 3.9), tw = w[0].length * 7.6 + 54;
+    signs.append(s('g', { class: 'sign w-' + r.wing, transform: 'translate(' + (sp[0] - tw / 2).toFixed(1) + ',' + (sp[1] - 11).toFixed(1) + ')' },
+      s('rect', { width: tw, height: 22, rx: 4 }), s('rect', { class: 'sw', x: 7, y: 7, width: 8, height: 8, rx: 1.5 }),
+      s('text', { x: 21, y: 15 }, w[0].toUpperCase(), s('tspan', { class: 'ct', dx: 7, text: String(count) }))));
+  });
+  var path = activePath();
+  if (path) root.append(s('polyline', { class: 'route floor-route', points: pts(path.books.map(function (id) { return floors[id]; })) }));
+  var objects = [];
+  units.forEach(function (o) {
+    if (o.u.desk) { objects.push({ it: { desk: true }, b: o.b }); return; }
+    var base = solid(o.b, 'c-wood'); base.append(s('title', { text: o.u.shelf })); root.append(base);
+    o.u.items.forEach(function (it) {
+      var b = R(it.box);
+      objects.push({ it: it, b: b });
+    });
+  });
+  // Sort individual objects: a desk can be behind one end of a long case and ahead of the other.
+  objects.sort(function (a, b) { return depth(a.b) - depth(b.b); }).forEach(function (io) {
+    if (io.it.desk) {
+      var desk = solid(io.b, 'c-wood deskobj' + (S.first ? ' rise' : ''));
+      desk.setAttribute('data-desk', '1'); desk.setAttribute('tabindex', '0'); desk.setAttribute('role', 'button');
+      desk.setAttribute('aria-label', S.last ? 'Front desk. Continue reading ' + byId[S.last].title + '.' : 'Front desk. Start the ten-minute tour.');
+      var mx = (io.b.x0 + io.b.x1) / 2, my = (io.b.y0 + io.b.y1) / 2;
+      desk.append(solid({ x0: mx - .16, x1: mx + .16, y0: my - .16, y1: my + .16, z0: io.b.z1, z1: io.b.z1 + .22 }, 'c-accent'));
+      root.append(desk); return;
+    }
+    var bk = io.it.book, bb = io.b;
+    if (!bk) { root.append(solid(bb, io.it.cls)); return; }
+    var read = S.read[bk.id];
+    var g = s('g', { class: 'book w-' + bk.wing + (matches(bk) ? '' : ' dim') + (S.open === bk.id ? ' sel' : '') + (S.first ? ' rise' : ''),
+      'data-book': bk.id, tabindex: '0', role: 'button', 'aria-label': bk.id + ', ' + bk.title + '. ' + bk.blurb + ' ' + (read || 'Unread') + '.',
+      'aria-pressed': String(S.open === bk.id), style: S.first ? 'animation-delay:' + (n++ * 800 / BOOKS.length).toFixed(0) + 'ms' : null }, solid(bb), band(bb));
+    if (read) {
+      var mx = (bb.x0 + bb.x1) / 2, my = (bb.y0 + bb.y1) / 2;
+      g.append(solid({ x0: mx - .11, x1: mx + .11, y0: my - .11, y1: my + .11, z0: bb.z1, z1: bb.z1 + (read === 'read' ? .42 : .2) }, 'c-accent'));
+    }
+    root.append(g);
+  });
+  root.append(signs);
+  if (path) path.books.forEach(function (id, i) {
+    var t = tops[id];
+    root.append(s('g', { class: 'stop', transform: 'translate(' + t[0].toFixed(1) + ',' + (t[1] - 12).toFixed(1) + ')' },
+      s('circle', { r: 9 }), s('text', { y: 3.5, text: String(i + 1) })));
+  });
+  svg.replaceChildren(root);
+  if (!view) fit(fb);
+  if (focused) svg.querySelector('[data-book="' + focused + '"]').focus({ preventScroll: true });
+  if (deskFocused) svg.querySelector('[data-desk]').focus({ preventScroll: true });
+  S.first = false;
+  renderStops(path);
+  renderList();
+}
+function fit(fb) {
+  fb = fb || R({ x0: -1.6, x1: WW + 1.6, y0: -1.6, y1: DD + 1.6, z0: -.7, z1: 0 });
+  var x0 = P(fb.x0, fb.y1)[0], x1 = P(fb.x1, fb.y0)[0], y0 = P(fb.x0, fb.y0, 4.7)[1], y1 = P(fb.x1, fb.y1, -.7)[1], pad = 32;
+  bounds = { x: x0 - pad, y: y0 - pad, w: x1 - x0 + pad * 2, h: y1 - y0 + pad * 2 };
+  view = Object.assign({}, bounds); applyView();
+}
+function applyView() { $('svg').setAttribute('viewBox', [view.x, view.y, view.w, view.h].map(function (v) { return v.toFixed(1); }).join(' ')); }
+function renderStops(path) {
+  var el = $('stops');
+  el.hidden = !path;
+  if (!path) return;
+  el.replaceChildren(h('b', { text: path.title, title: path.for || path.title }));
+  path.books.forEach(function (id, i) {
+    el.append(h('button', { class: S.read[id] === 'read' ? 'done' : null, onclick: function () { openBook(id); } },
+      h('i', { text: String(i + 1) }), byId[id].title));
+  });
+}
+
+/* Only the two format tokens become controls; all other content remains text. */
+function inline(el, text) {
+  var at = 0;
+  for (var token of text.matchAll(/\[\[(src|book):([^\]]+)\]\]/g)) {
+    el.append(text.slice(at, token.index));
+    var value = token[2];
+    if (token[1] === 'book' && Object.hasOwn(byId, value)) {
+      el.append(h('button', { class: 'booklink', text: byId[value].title + ' (' + value + ')', onclick: function (id) { return function () { openBook(id); }; }(value) }));
+    } else if (token[1] === 'src') {
+      var citation = /^([^#]+)(?:#L([1-9]\d*)(?:-L([1-9]\d*))?)?$/.exec(value);
+      if (citation) {
+        var label = citation[1].split('/').filter(Boolean).pop() + (citation[2] ? ' ' + citation[2] + (citation[3] ? '–' + citation[3] : '') : '');
+        el.append(h('button', { class: 'chip', title: value, 'aria-label': 'Source: ' + value, text: label,
+          onclick: function (source) { return function () { showSource(source); }; }(value) }));
+      } else el.append(token[0]);
+    } else el.append(token[0]);
+    at = token.index + token[0].length;
+  }
+  el.append(text.slice(at));
+  return el;
+}
+function prose(text) {
+  var el = h('div', { class: 'prose' });
+  text.split(/\n\s*\n/).forEach(function (p) { el.append(inline(h('p'), p)); });
+  return el;
+}
+function showSource(source) {
+  var panel = $('sourceDetail'); panel.hidden = false;
+  var input = h('input', { readonly: true, value: source, 'aria-label': 'Project-relative source reference' });
+  var result = h('span', { role: 'status' });
+  panel.replaceChildren(h('b', { text: 'Source reference' }), input,
+    h('button', { class: 'ibtn', text: 'Copy path', onclick: async function () {
+      input.select();
+      try { await navigator.clipboard.writeText(source.split('#')[0]); result.textContent = 'Path copied.'; }
+      catch { result.textContent = 'Copy unavailable. Select and copy the reference above.'; }
+    } }), result);
+  panel.scrollIntoView({ block: 'nearest' });
+}
+function markRead(id) {
+  if (S.open !== id || S.depth < 2 || S.read[id] === 'read') return;
+  S.read[id] = 'read'; save(); render();
+}
+function openBook(id, focus) {
+  if (!Object.hasOwn(byId, id)) return;
+  $('tip').hidden = true;
+  S.open = id;
+  if (S.depth >= 2) { S.read[id] = S.read[id] || 'started'; S.last = id; }
+  save();
+  var b = byId[id], w = WINGS[b.wing], desk = $('desk'), path = activePath();
+  var deskFocused = desk.contains(document.activeElement);
+  if (path && !path.books.includes(id)) path = null;
+  var list = path ? path.books : BOOKS.map(function (b) { return b.id; }), at = list.indexOf(id);
+  var body = h('div', { class: 'deskbody', tabindex: '0', 'aria-label': 'Book content' },
+    h('div', { class: 'soft', style: 'font-size:.82rem;margin-bottom:6px', text: w[0] + ' wing · ' + b.shelf +
+      (path ? ' · stop ' + (at + 1) + ' of ' + list.length + ' on “' + path.title + '”' : '') }),
+    h('h1', { id: 'bookTitle', tabindex: '-1', text: b.title }), h('p', { class: 'lede', text: b.blurb }));
+  if (S.depth >= 2) body.append(prose(b.summary));
+  if (S.depth === 3) {
+    (b.chapters || []).forEach(function (c, i) {
+      body.append(h('section', { class: 'chap' },
+        h('header', null, h('span', { class: 'mono soft', text: String(i + 1) }), h('h2', { text: c.title }),
+          h('span', { class: 'stamp ' + c.stamp, text: { verified: 'From source', inferred: 'Inferred', open: 'Open question' }[c.stamp] })), prose(c.body)));
+    });
+    body.append(h('section', { class: 'boxed' }, h('h3', { text: 'What the librarian couldn’t tell' }),
+      b.unknowns && b.unknowns.length ? h('ul', null, b.unknowns.map(function (u) { return inline(h('li'), u); })) : h('p', { text: 'No open questions recorded.' })));
+    body.append(h('section', { class: 'source' }, h('h3', { text: 'Sources' }), b.sources.map(function (source) {
+      return h('p', null, h('button', { class: 'chip', text: source, onclick: function () { showSource(source); } }));
+    })));
+  }
+  body.append(h('div', { id: 'sourceDetail', class: 'source', hidden: true }));
+  desk.className = 'desk w-' + b.wing;
+  desk.setAttribute('aria-labelledby', 'bookTitle');
+  desk.replaceChildren(h('div', { class: 'deskhead' }, h('span', { class: 'cn', text: b.id }), h('span', { class: 'grow' }),
+    h('div', { class: 'dial', role: 'group', 'aria-label': 'Reading depth' }, ['Blurb', 'Summary', 'Full'].map(function (d, i) {
+      return h('button', { 'aria-pressed': String(S.depth === i + 1), onclick: function () { S.depth = i + 1; openBook(id, false); } }, d);
+    })), h('button', { class: 'ibtn', 'aria-label': 'Close and put the book back', onclick: closeBook }, '✕')), body,
+    h('div', { class: 'deskfoot' },
+      h('button', { class: 'ibtn', disabled: at <= 0, onclick: function () { openBook(list[at - 1]); } }, '◂ Previous'),
+      h('button', { class: 'ibtn', disabled: at >= list.length - 1, onclick: function () { openBook(list[at + 1]); } }, (path ? 'Next stop' : 'Next book') + ' ▸')));
+  desk.hidden = false; $('hint').classList.add('dismissed'); render();
+  if (focus !== false || deskFocused) $('bookTitle').focus({ preventScroll: true });
+  writeRoute();
+  function reachedEnd() { if (body.isConnected && body.scrollTop + body.clientHeight >= body.scrollHeight - 4) markRead(id); }
+  body.addEventListener('scroll', reachedEnd);
+  requestAnimationFrame(reachedEnd);
+}
+function closeBook() {
+  var id = S.open; S.open = null; $('desk').hidden = true; $('tip').hidden = true; render();
+  var book = S.list ? $('listView').querySelector('[data-list-book="' + id + '"]') : $('svg').querySelector('[data-book="' + id + '"]');
+  if (book && book.closest('[hidden]')) book = $('q');
+  if (book) book.focus({ preventScroll: true });
+  writeRoute();
+}
+function startTour() {
+  var tour = PATHS.find(function (p) { return p.id === 'tour'; });
+  S.path = tour.id; $('pathSel').value = S.path; S.depth = 2;
+  openBook(S.last && S.read[S.last] !== 'read' ? S.last : tour.books.find(function (id) { return S.read[id] !== 'read'; }) || tour.books[0]);
+}
+
+var svg = $('svg'), tip = $('tip'), drag = null, moved = false;
+function target(e) { return e.target.closest ? e.target.closest('[data-book],[data-wing],[data-desk]') : null; }
+function tipFor(t) {
+  if (!t) return null;
+  if (t.dataset.book) {
+    var b = byId[t.dataset.book];
+    return [h('span', { class: 'cn', text: b.id + ' · ' + WINGS[b.wing][0] + ' · ' + (S.read[b.id] || 'unread') }), h('b', { text: b.title }), b.blurb,
+      h('em', { text: 'Covers about ' + Math.round(b.weight * 100) + '% of the code · click to read' })];
+  }
+  if (t.dataset.desk) return [h('span', { class: 'cn', text: 'FRONT DESK' }), h('b', { text: library.project.name }), library.project.description,
+    h('em', { text: library.project.languages.join(' · ') }), h('em', { text: 'Checked against ' + (library.project.commit ? 'commit ' + library.project.commit : 'a project without a recorded commit') +
+      (library.project.written ? ' on ' + library.project.written : '') }), h('em', { text: S.last ? 'Ring to continue reading or start the tour.' : 'Ring to start the ten-minute tour.' })];
+  var id = t.dataset.wing;
+  return [h('span', { class: 'cn', text: 'WING' }), h('b', { text: WINGS[id][0] }), WINGS[id][1], h('em', { text: wings[id].intro || '' })];
+}
+function placeTip(x, y) {
+  tip.style.left = Math.min(window.innerWidth - tip.offsetWidth - 8, Math.max(8, x + 16)) + 'px';
+  tip.style.top = Math.min(window.innerHeight - tip.offsetHeight - 8, Math.max(8, y + 18)) + 'px';
+}
+svg.addEventListener('pointermove', function (e) {
+  if (drag) return;
+  var content = tipFor(target(e));
+  if (!content) { tip.hidden = true; return; }
+  tip.replaceChildren.apply(tip, content); tip.hidden = false; placeTip(e.clientX, e.clientY);
+});
+svg.addEventListener('pointerleave', function () { tip.hidden = true; });
+svg.addEventListener('pointerdown', function (e) {
+  if (e.button !== 0) return;
+  drag = { id: e.pointerId, x: e.clientX, y: e.clientY, vx: view.x, vy: view.y }; moved = false;
+});
+window.addEventListener('pointermove', function (e) {
+  if (!drag || drag.id !== e.pointerId) return;
+  if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 4) moved = true;
+  if (!moved) return;
+  var scale = 1 / svg.getScreenCTM().a;
+  view.x = drag.vx - (e.clientX - drag.x) * scale; view.y = drag.vy - (e.clientY - drag.y) * scale;
+  applyView(); tip.hidden = true; svg.classList.add('drag');
+});
+function endDrag() { drag = null; svg.classList.remove('drag'); }
+window.addEventListener('pointerup', endDrag); window.addEventListener('pointercancel', endDrag); window.addEventListener('blur', endDrag);
+svg.addEventListener('click', function (e) { if (!moved || e.detail === 0) act(target(e)); });
+svg.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(target(e)); } });
+svg.addEventListener('focusin', function (e) {
+  var t = target(e), content = tipFor(t); if (!content) return;
+  var rect = t.getBoundingClientRect(); tip.replaceChildren.apply(tip, content); tip.hidden = false; placeTip(rect.right - 10, rect.top);
+});
+svg.addEventListener('focusout', function () { tip.hidden = true; });
+function act(t) {
+  if (!t) return;
+  if (t.dataset.book) openBook(t.dataset.book);
+  else if (t.dataset.desk) startTour();
+}
+function zoom(f, cx, cy) {
+  var nw = Math.min(bounds.w * 4, Math.max(bounds.w / 4, view.w * f)), k = nw / view.w;
+  if (cx == null) { cx = view.x + view.w / 2; cy = view.y + view.h / 2; }
+  view.x = cx - (cx - view.x) * k; view.y = cy - (cy - view.y) * k; view.w *= k; view.h *= k; applyView();
+}
+svg.addEventListener('wheel', function (e) {
+  e.preventDefault();
+  var m = svg.getScreenCTM(), p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+  p = m ? p.matrixTransform(m.inverse()) : { x: null, y: null };
+  zoom(e.deltaY > 0 ? 1.12 : 1 / 1.12, p.x, p.y);
+}, { passive: false });
+function turn(d) { S.rot = (S.rot + d + 4) % 4; view = null; tip.hidden = true; render(); }
+$('rotL').addEventListener('click', function () { turn(-1); });
+$('rotR').addEventListener('click', function () { turn(1); });
+$('zIn').addEventListener('click', function () { zoom(1 / 1.25); });
+$('zOut').addEventListener('click', function () { zoom(1.25); });
+$('zFit').addEventListener('click', function () { fit(); });
+$('q').addEventListener('input', function (e) {
+  S.query = e.target.value.trim().toLowerCase();
+  $('qn').textContent = S.query ? BOOKS.filter(matches).length + ' found' : '';
+  svg.querySelectorAll('[data-book]').forEach(function (book) { book.classList.toggle('dim', !matches(byId[book.dataset.book])); });
+  renderList();
+});
+var sel = $('pathSel'); sel.append(h('option', { value: '', text: 'None' }));
+PATHS.forEach(function (p) { sel.append(h('option', { value: p.id, text: p.title })); });
+sel.addEventListener('change', function () { S.path = sel.value; if (S.open) openBook(S.open, false); else render(); writeRoute(); });
+function applyTheme() {
+  if (S.theme === 'system') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', S.theme);
+  $('themeBtn').textContent = { system: '◐ System', light: '☀ Day', dark: '☾ Lamp' }[S.theme];
+}
+$('themeBtn').addEventListener('click', function () { S.theme = { system: 'light', light: 'dark', dark: 'system' }[S.theme]; applyTheme(); save(); });
+$('viewBtn').addEventListener('click', function () { setView(!S.list, true); });
+$('closeShortcuts').addEventListener('click', function () { $('shortcuts').close(); });
+narrow.addEventListener('change', function (e) { if (!explicitView) setView(e.matches); });
+window.addEventListener('hashchange', readRoute);
+window.addEventListener('popstate', readRoute);
+document.addEventListener('keydown', function (e) {
+  if ($('shortcuts').open) return;
+  // SVG paint order changes with rotation; keyboard order follows wings and shelves.
+  if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    var controls = Array.from(document.querySelectorAll('button:not(:disabled),input,select,textarea,a[href],[tabindex="0"]')).filter(function (el) { return el.getClientRects().length && !el.closest('[hidden]'); });
+    var books = controls.filter(function (el) { return svg.contains(el); }).sort(function (a, b) {
+      return (a.dataset.desk ? -1 : BOOKS.indexOf(byId[a.dataset.book])) - (b.dataset.desk ? -1 : BOOKS.indexOf(byId[b.dataset.book]));
+    });
+    var order = controls.map(function (el) { return svg.contains(el) ? books.shift() : el; });
+    var at = order.indexOf(document.activeElement), next = order[at + (e.shiftKey ? -1 : 1)];
+    if (at >= 0 && next && (svg.contains(document.activeElement) || svg.contains(next))) { e.preventDefault(); next.focus(); }
+    return;
+  }
+  if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName) || e.target.isContentEditable || e.ctrlKey || e.metaKey || e.altKey) return;
+  var k = e.key.toLowerCase();
+  if (k === 'l') { e.preventDefault(); setView(!S.list, true); }
+  else if (k === 't') $('themeBtn').click();
+  else if (k === '?') { e.preventDefault(); $('shortcuts').showModal(); }
+  else if (k === 'escape' && S.open) { e.preventDefault(); closeBook(); }
+  else if (k === '/') { e.preventDefault(); $('q').focus(); }
+  else if (S.open && ['1', '2', '3'].includes(k)) { e.preventDefault(); S.depth = Number(k); openBook(S.open, false); }
+  else if (S.open && (k === 'j' || k === 'k')) {
+    e.preventDefault();
+    var path = activePath(), ids = path && path.books.includes(S.open) ? path.books : BOOKS.map(function (b) { return b.id; });
+    var id = ids[ids.indexOf(S.open) + (k === 'j' ? 1 : -1)];
+    if (id) openBook(id);
+  } else if (!S.list) {
+    if (k === 'q') turn(-1); else if (k === 'e') turn(1);
+    else if (k === '+' || k === '=') { e.preventDefault(); zoom(1 / 1.25); }
+    else if (k === '-' || k === '−') { e.preventDefault(); zoom(1.25); }
+    else if (k === '0') { e.preventDefault(); fit(); }
+    else if (!e.target.closest('#desk') && ['arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(k)) {
+      e.preventDefault();
+      view.x += k === 'arrowleft' ? -view.w * .06 : k === 'arrowright' ? view.w * .06 : 0;
+      view.y += k === 'arrowup' ? -view.h * .06 : k === 'arrowdown' ? view.h * .06 : 0;
+      applyView();
+    }
+  }
+});
+document.title = library.project.name + ' — Library';
+$('projectName').textContent = library.project.name;
+$('projectName').title = library.project.description;
+$('projectStats').textContent = BOOKS.length + ' books · ' + library.wings.length + ' wings';
+initList(); setView(S.list); readRoute();
+applyTheme(); render();
+})();
+</script>
+</body>
+</html>
