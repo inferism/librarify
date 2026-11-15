@@ -62,7 +62,10 @@ section into every subagent's instructions.
    or task runners. The only commands you run are read-only `git` and file-listing
    commands, and the skill's own build script.
 5. **Write only inside `librarify/`.** Create it if missing. Do not edit any
-   other file, including `.gitignore`.
+   other file, including `.gitignore`. If `librarify` already exists as a link
+   (symlink or junction), stop before writing anything and tell the user: writes
+   through it would land outside the project. Check with
+   `node -e "process.exit(require('fs').lstatSync('librarify').isSymbolicLink() ? 1 : 0)"`.
 6. **Pass paths as arguments.** Use file-reading and search tools for project
    files. If a shell command needs a path, pass it as its own quoted argument;
    never build a command string out of file names found in the project.
