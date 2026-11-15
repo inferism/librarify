@@ -13,14 +13,17 @@
   --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --mono:ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
 }
 :root[data-theme=dark]{
+  color-scheme:dark;
   --paper:#16130F; --surface:#1F1B16; --ink:#EDE6D8; --ink-soft:#A89F8F; --rule:#3A342B; --accent:#E08A7E;
   --brass:#D9A441; --navy:#7FA7D6; --forest:#7DB899; --oxblood:#D98880; --slate:#9AA7B4; --plum:#B992BF;
   --green:#7DB899; --amber:#D9A441; --floor:#2B261F; --wall:#3B352C; --wood:#7A5C3A; --band:#16130F;
   --shadow:0 12px 40px rgba(0,0,0,.6);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  color-scheme:dark;
   --paper:#16130F; --surface:#1F1B16; --ink:#EDE6D8; --ink-soft:#A89F8F; --rule:#3A342B; --accent:#E08A7E;
   --brass:#D9A441; --navy:#7FA7D6; --forest:#7DB899; --oxblood:#D98880; --slate:#9AA7B4; --plum:#B992BF;
   --green:#7DB899; --amber:#D9A441; --floor:#2B261F; --wall:#3B352C; --wood:#7A5C3A; --band:#16130F;
@@ -53,6 +56,12 @@ header.bar{flex:none;display:flex;align-items:center;gap:12px;height:56px;paddin
 .field input,.field select{border:0;background:transparent;outline:none;color:var(--ink);min-width:0}
 .field input{width:150px}
 .field:focus-within{border-color:var(--accent)}
+.path-field{cursor:pointer}
+.path-field select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:4px;font-weight:500}
+.path-field option{background:var(--surface);color:var(--ink);font-weight:400}
+.path-field::after{content:"";flex:none;width:7px;height:7px;margin:0 2px 3px;border:solid var(--ink-soft);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);pointer-events:none}
+.path-field:has(option:checked:not([value=""])){border-color:var(--accent);background:var(--surface);color:var(--accent)}
+.path-field:has(option:checked:not([value=""]))::after{border-color:var(--accent)}
 .ibtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;min-width:36px;padding:6px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--surface);font-size:.84rem;color:var(--ink-soft);white-space:nowrap}
 .ibtn:hover{color:var(--ink);border-color:var(--ink-soft)}
 
@@ -697,7 +706,7 @@ $('q').addEventListener('input', function (e) {
   svg.querySelectorAll('[data-book]').forEach(function (book) { book.classList.toggle('dim', !matches(byId[book.dataset.book])); });
   renderList();
 });
-var sel = $('pathSel'); sel.append(h('option', { value: '', text: 'None' }));
+var sel = $('pathSel'); sel.append(h('option', { value: '', text: 'No path' }));
 PATHS.forEach(function (p) { sel.append(h('option', { value: p.id, text: p.title })); });
 sel.addEventListener('change', function () { S.path = sel.value; if (S.open) openBook(S.open, false); else render(); writeRoute(); });
 function applyTheme() {
