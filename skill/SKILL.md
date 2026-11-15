@@ -85,7 +85,9 @@ Say: `Looking at the project…`
 3. Note languages by extension and rough sizes (line counts of the remaining files).
 4. Read the manifests (`package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`,
    …), the README, and the entry points.
-5. Note the commit: `git rev-parse HEAD`, or `null` outside git.
+5. Note the commit: `git rev-parse HEAD`, or `null` outside git. Count files with
+   uncommitted changes (`git status --porcelain`): the books describe the working
+   copy, so if any differ from the commit, say so in the report.
 
 If no readable source files remain, stop and say so plainly. Write nothing.
 
@@ -170,5 +172,7 @@ Library ready: librarify-out/index.html
 - *Left out*: each skipped kind with its count; add "git not available" if so.
   Name no secret file's contents.
 - *Not determined*: chapters stamped `open` plus `unknowns` items.
+- If step 1 found uncommitted changes, add after *Not determined*:
+  `Written from: commit 4f8c3f9 plus 3 uncommitted files`.
 
 Then offer to open `index.html`.

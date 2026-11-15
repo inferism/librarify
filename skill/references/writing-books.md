@@ -61,6 +61,9 @@ Never stamp a guess `verified` to make a book look finished.
 - Check the line numbers against the file you read; do not cite from memory.
 - List a file in `sources` only if the book is actually about it.
 - Link related books with `[[book:ARC-002]]` instead of re-explaining them.
+- Tokens are always read as tokens; there is no way to show one literally. When
+  a book needs to talk about the syntax itself, describe it in words ("a src
+  token with a path and line range").
 
 ## Unknowns
 
