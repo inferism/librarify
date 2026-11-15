@@ -4,8 +4,8 @@ Librarify is a skill for coding agents. Typing `/librarify` inside any project
 turns that project into a **library**: a folder containing one self-contained HTML
 file that a person can open and look around in to understand the system.
 
-Graphify answers "how are these things connected?" with a graph.
-Librarify answers "explain this system to me" with books.
+Librarify answers "explain this system to me" with books: each one explains one
+topic end to end, at the depth the reader chooses.
 
 It is a small thing: a set of instructions, one HTML template, and one short
 script. The agent does the reading, the deciding and the writing. The script only
@@ -108,8 +108,8 @@ Five steps. Only step 4 is code; the rest is the agent following `SKILL.md`.
 |---|---|---|
 | 1 | **Look** | List the project's files (using git when available), note languages and sizes, and skim the entry points and manifests. Files that hold secrets, binaries, and ignored files are skipped and never opened. |
 | 2 | **Plan** | Decide which wings apply and which books to write, and which files each book is about. The number of books follows the size of the project. |
-| 3 | **Write** | Write each book following `writing-books.md` and save everything as `librarify/library.json` in the format from `book-format.md`. On larger projects, books are written by parallel subagents, one per book or shelf. |
-| 4 | **Build** | Run `node build.mjs librarify`. The script checks the data has what the viewer needs, checks it for obvious secrets, and writes `index.html`. |
+| 3 | **Write** | Write each book following `writing-books.md` and save everything as `librarify/library.json` in the format from `book-format.md`. On larger projects, books are written by parallel subagents, one per book or shelf. Then the agent checks what the script cannot: that cited line ranges exist, that books do not contradict each other, and that unknowns are about the project. |
+| 4 | **Build** | Run `node build.mjs librarify`. The script refuses an output folder that is a link, checks the data has what the viewer needs, checks it for obvious secrets, and writes `index.html`. |
 | 5 | **Report** | Say where the library is, how many books and wings, what was skipped, and what could not be determined. Offer to open it. |
 
 ### Commands
@@ -147,6 +147,10 @@ building and lets the visitor:
 - pick a **reading path** and see it drawn as a trail from book to book
 - **search**, which fades every book that does not match
 - switch to a plain **list view**, and between light and dark themes
+- do all of it from the **keyboard** (press `?` for the shortcuts) and on a
+  **phone**, where the page opens in the list view
+- **link** to a place in the library: the address holds the view, the open book
+  and the reading path (`#/book/ARC-002?path=tour`), so Back works
 
 How it is built:
 
