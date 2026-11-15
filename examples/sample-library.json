@@ -1,0 +1,220 @@
+{
+  "format": "librarify/1",
+  "project": {
+    "name": "Parcelwise",
+    "description": "A hosted web app that collects parcel tracking for small online shops and emails their customers when a status changes.",
+    "languages": ["TypeScript", "SQL"],
+    "commit": "3f9c2ab71e04d5c8a6b2f90e1d47c3a85b6e2f10",
+    "written": "2026-11-15"
+  },
+  "wings": [
+    { "id": "lobby", "intro": "Start here: what Parcelwise is and how to run it on your machine.", "shelves": ["Start here"] },
+    { "id": "architecture", "intro": "Four programs, one database, and one rule about who may call whom.", "shelves": ["Core"] },
+    { "id": "workflow", "intro": "The two journeys that matter: a shop owner checking a parcel, and a carrier reporting one.", "shelves": ["Runtime"] },
+    { "id": "security", "intro": "Who is trusted, how they prove it, and what keeps one shop's data from another.", "shelves": ["Boundaries", "Access"] },
+    { "id": "stacks", "intro": "One book per package in the workspace.", "shelves": ["Services", "Integrations"] },
+    { "id": "workshop", "intro": "Recipes for the changes people make most often.", "shelves": ["Recipes"] }
+  ],
+  "books": [
+    {
+      "id": "LOB-001",
+      "title": "What Parcelwise is",
+      "wing": "lobby",
+      "shelf": "Start here",
+      "blurb": "Shops connect their carrier accounts, and Parcelwise shows every parcel's status on one dashboard.",
+      "summary": "Parcelwise is a hosted web app for small online shops. A shop connects one or more carrier accounts. From then on Parcelwise collects tracking updates for every shipment, shows them on a dashboard, and emails the shop's customers when a parcel is delayed or delivered.\n\nIt is made of four programs: an API, a background worker, a web dashboard, and a set of carrier adapters. [[book:ARC-001]] explains how they fit.",
+      "chapters": [
+        {
+          "title": "Who uses it",
+          "stamp": "verified",
+          "body": "Two kinds of people use Parcelwise. Shop staff sign in to the dashboard to see their parcels and manage carrier accounts. Their customers never sign in; they only receive emails. The user roles are defined in one place [[src:packages/api/src/auth/roles.ts#L1-L14]]."
+        },
+        {
+          "title": "What it does not do",
+          "stamp": "inferred",
+          "body": "Parcelwise does not buy postage or print labels. Nothing in the carrier adapters calls a carrier's label or rating API, and the dashboard has no page for it, so shops appear to do that in their carrier's own tools."
+        }
+      ],
+      "sources": ["README.md", "packages/api/src/auth/roles.ts"],
+      "unknowns": ["Whether any shops use more than one organisation."],
+      "weight": 0.03
+    },
+    {
+      "id": "LOB-002",
+      "title": "How to run it",
+      "wing": "lobby",
+      "shelf": "Start here",
+      "blurb": "One command starts the database, API, worker and dashboard on your machine with sample data.",
+      "summary": "You need Node 20 and Docker. One command starts Postgres in a container, applies the migrations, loads sample shipments, and runs the API, the dashboard and the worker [[src:package.json#L8-L15]]. Carrier calls are replaced by a fake carrier in development, so nothing leaves your machine.",
+      "sources": ["package.json", "docker-compose.yml", "scripts/dev.sh"],
+      "weight": 0.02
+    },
+    {
+      "id": "ARC-001",
+      "title": "The parts and how they fit",
+      "wing": "architecture",
+      "shelf": "Core",
+      "blurb": "Four programs share one database: the dashboard talks to the API, the API and the worker talk to carriers.",
+      "summary": "The dashboard never talks to the database or to carriers; it only calls the API. The API answers requests and puts slow work on a job queue. The worker takes jobs off that queue. Both reach carriers through the same adapter layer, so each carrier's quirks live in one place.",
+      "chapters": [
+        {
+          "title": "The four programs",
+          "stamp": "verified",
+          "body": "The workspace has four packages that run: web, api, worker and carriers [[src:package.json#L20-L26]]. web is a single-page app served as static files. api is an HTTP service. worker is a long-running process with no HTTP port. carriers is a library that api and worker both import.\n\nA fifth package, db, holds the schema and migrations and is imported by api and worker."
+        },
+        {
+          "title": "Who may call whom",
+          "stamp": "verified",
+          "body": "Packages may depend downward only: web → api → carriers → db. A lint rule fails the build if a package imports one above it [[src:.eslintrc.cjs#L30-L44]]. This is why carrier quirks never leak into the dashboard."
+        },
+        {
+          "title": "The job queue",
+          "stamp": "inferred",
+          "body": "The queue is a Postgres table rather than a separate broker [[src:packages/db/migrations/004_jobs.sql]]. That keeps the system to one database, at the cost of polling. Nothing in the code says how many jobs per second this was sized for."
+        }
+      ],
+      "sources": ["package.json", ".eslintrc.cjs", "packages/db/migrations/004_jobs.sql"],
+      "unknowns": ["The expected job volume the Postgres queue was designed for."],
+      "weight": 0.07
+    },
+    {
+      "id": "ARC-002",
+      "title": "Data model",
+      "wing": "architecture",
+      "shelf": "Core",
+      "blurb": "Organisations own shipments; shipments collect tracking events; users belong to one organisation.",
+      "summary": "Five tables carry almost everything: organisations, users, carrier_accounts, shipments and tracking_events [[src:packages/db/migrations/001_init.sql]]. Every row except an organisation points at the organisation that owns it. That single rule is what keeps one shop from seeing another shop's parcels; [[book:SEC-002]] shows where it is enforced.",
+      "sources": ["packages/db/migrations/"],
+      "weight": 0.05
+    },
+    {
+      "id": "WRK-001",
+      "title": "Life of a tracking request",
+      "wing": "workflow",
+      "shelf": "Runtime",
+      "blurb": "What happens between a shop owner opening a parcel's page and the status appearing on screen.",
+      "summary": "The dashboard asks the API for one shipment's status. The API checks who is asking, loads the shipment, and decides whether its stored status is fresh enough. If it is not, the API asks the carrier through an adapter, saves what it learns, and answers. If the carrier is slow, the API answers with the stored status and marks it stale.",
+      "chapters": [
+        {
+          "title": "The request arrives",
+          "stamp": "verified",
+          "body": "When a shop owner opens a parcel's page, the dashboard asks the API for that shipment's tracking status [[src:packages/api/src/routes/shipments.ts#L41-L58]]. Before the route's own code runs, the session check turns the browser's cookie into a known user, and a rate limit stops a stuck browser tab from flooding a carrier [[src:packages/api/src/app.ts#L22-L39]]."
+        },
+        {
+          "title": "Finding the shipment",
+          "stamp": "verified",
+          "body": "The handler loads the shipment by id, scoped to the caller's organisation [[src:packages/api/src/repos/shipmentRepo.ts#L12-L37]]. If the shipment belongs to another shop, the answer is 404 Not Found, not 403 Forbidden. A 403 would confirm the id is real."
+        },
+        {
+          "title": "Is the stored status fresh?",
+          "stamp": "verified",
+          "body": "A stored status younger than 15 minutes is returned as is [[src:packages/api/src/services/tracking.ts#L18-L30]]. Older than that, the service asks the carrier adapter for an update and saves any new tracking events before answering."
+        },
+        {
+          "title": "When the carrier is slow",
+          "stamp": "inferred",
+          "body": "The carrier call has a 4-second timeout [[src:packages/api/src/services/refresh.ts#L73-L92]]. On timeout the handler answers with the stored status marked stale and queues a refresh job. The worker appears to pick that job up and retry; no test exercises the path end to end."
+        }
+      ],
+      "sources": [
+        "packages/api/src/routes/shipments.ts",
+        "packages/api/src/app.ts",
+        "packages/api/src/repos/shipmentRepo.ts",
+        "packages/api/src/services/"
+      ],
+      "unknowns": [
+        "Whether the 15-minute freshness window can differ per carrier.",
+        "No test covers the carrier-timeout path."
+      ],
+      "weight": 0.08
+    },
+    {
+      "id": "WRK-002",
+      "title": "From carrier update to customer email",
+      "wing": "workflow",
+      "shelf": "Runtime",
+      "blurb": "A carrier calls a webhook; the worker records the event and decides whether a customer should be told.",
+      "summary": "Carriers push updates to a webhook endpoint [[src:packages/api/src/routes/webhooks.ts]]. The API verifies the call, stores the raw payload and queues a job. The worker turns the payload into tracking events, updates the shipment, and sends an email if the status moved to delayed, out for delivery or delivered.",
+      "sources": ["packages/api/src/routes/webhooks.ts", "packages/worker/src/jobs/"],
+      "unknowns": ["What happens to an email when the mail provider is down."],
+      "weight": 0.06
+    },
+    {
+      "id": "SEC-001",
+      "title": "Trust boundaries",
+      "wing": "security",
+      "shelf": "Boundaries",
+      "blurb": "Three kinds of outsider reach the system: browsers, carriers calling webhooks, and the carriers' own APIs.",
+      "summary": "Everything arriving from a browser is checked against a session and an organisation. Everything arriving from a carrier webhook is checked against a signature [[src:packages/api/src/routes/webhooks.ts#L10-L27]]. Everything coming back from a carrier API is validated against a schema before it is stored.",
+      "sources": ["packages/api/src/routes/webhooks.ts", "packages/carriers/src/schema.ts"],
+      "weight": 0.04
+    },
+    {
+      "id": "SEC-002",
+      "title": "Sign-in and permissions",
+      "wing": "security",
+      "shelf": "Access",
+      "blurb": "People sign in with email and password; every database query is limited to their own organisation.",
+      "summary": "Signing in creates a session stored in the database and referenced by a cookie the browser cannot read from script. A user belongs to one organisation and is either a member or an admin. The important protection is the organisation scope applied to every query.",
+      "chapters": [
+        {
+          "title": "Signing in",
+          "stamp": "verified",
+          "body": "Passwords are checked against a slow hash and never stored in plain form [[src:packages/api/src/auth/password.ts#L5-L21]]. A successful sign-in creates a session row and sets an HttpOnly, Secure, SameSite=Lax cookie holding only the session id [[src:packages/api/src/auth/session.ts#L30-L52]]."
+        },
+        {
+          "title": "Members and admins",
+          "stamp": "verified",
+          "body": "Admins can manage carrier accounts and invite people; members can only view shipments. Routes that need an admin say so with one guard [[src:packages/api/src/auth/guards.ts#L8-L19]]."
+        },
+        {
+          "title": "The organisation scope",
+          "stamp": "verified",
+          "body": "Every repository function takes the caller's organisation id and adds it to the query [[src:packages/api/src/repos/shipmentRepo.ts#L12-L37]]. There is no way to call a repository without one, because the parameter is required by its type."
+        },
+        {
+          "title": "Areas needing review",
+          "stamp": "open",
+          "body": "Sessions do not appear to expire on the server side; only the cookie has a lifetime [[src:packages/api/src/auth/session.ts#L30-L52]]. Whether old session rows are cleaned up elsewhere could not be determined."
+        }
+      ],
+      "sources": ["packages/api/src/auth/", "packages/api/src/repos/shipmentRepo.ts"],
+      "unknowns": ["Whether old sessions are ever removed from the database."],
+      "weight": 0.05
+    },
+    {
+      "id": "STK-001",
+      "title": "api/ — the HTTP service",
+      "wing": "stacks",
+      "shelf": "Services",
+      "blurb": "Routes, sign-in, and the services that read and write shipments.",
+      "summary": "The largest package. Routes are thin: they check input and call a service. Services hold the rules. Repositories are the only code that writes SQL. Start at [[src:packages/api/src/app.ts]] to see every route mounted.",
+      "sources": ["packages/api/"],
+      "weight": 0.16
+    },
+    {
+      "id": "STK-002",
+      "title": "carriers/ — carrier adapters",
+      "wing": "stacks",
+      "shelf": "Integrations",
+      "blurb": "One adapter per carrier, all returning the same list of tracking events.",
+      "summary": "Three adapters share an interface with two functions: fetch a shipment's status, and parse a webhook payload [[src:packages/carriers/src/adapter.ts#L1-L22]]. A fake adapter is used in development and tests. Each carrier's credentials are read from the shop's stored carrier account, never from the code.",
+      "sources": ["packages/carriers/"],
+      "weight": 0.10
+    },
+    {
+      "id": "WSH-001",
+      "title": "Add a new carrier",
+      "wing": "workshop",
+      "shelf": "Recipes",
+      "blurb": "Write one adapter file, register it, add its webhook route, and add it to the settings page.",
+      "summary": "Four places to touch, in order: the adapter, the adapter registry [[src:packages/carriers/src/registry.ts]], the webhook router, and the carrier list in the dashboard. [[book:STK-002]] describes the interface the adapter must implement.",
+      "sources": ["packages/carriers/src/registry.ts", "packages/api/src/routes/webhooks.ts", "packages/web/src/pages/Carriers.tsx"],
+      "weight": 0.02
+    }
+  ],
+  "paths": [
+    { "id": "tour", "title": "The ten-minute tour", "for": "Anyone", "books": ["LOB-001", "ARC-001", "WRK-001", "SEC-001"] },
+    { "id": "security", "title": "Security review", "for": "Reviewer", "books": ["SEC-001", "SEC-002", "STK-002"] }
+  ]
+}
