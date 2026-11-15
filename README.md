@@ -4,7 +4,9 @@ Librarify is a Claude Code skill that reads a project and turns it into a small
 library of books a newcomer can browse: an isometric building you explore in the
 browser. It writes one offline page and the same content as data.
 
-<!-- SCREENSHOT: the library building (replace this line with an image) -->
+![A library on the ten-minute tour: an isometric building with six rooms of bookcases, a dotted trail between four books, and one book open on the reading desk](docs/library.png)
+
+*The sample library from `examples/`, on the ten-minute tour.*
 
 ## Install
 
@@ -15,14 +17,14 @@ repository to `~/.claude/skills/librarify`.
 **macOS / Linux**
 
 ```bash
-mkdir -p ~/.claude/skills && cp -R skill ~/.claude/skills/librarify
+mkdir -p ~/.claude/skills/librarify && cp -R skill/. ~/.claude/skills/librarify/
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-New-Item -ItemType Directory -Force "$HOME\.claude\skills" | Out-Null
-Copy-Item -Recurse -Force skill "$HOME\.claude\skills\librarify"
+New-Item -ItemType Directory -Force "$HOME\.claude\skills\librarify" | Out-Null
+Copy-Item -Recurse -Force skill\* "$HOME\.claude\skills\librarify"
 ```
 
 Run these from the repository root. Start a new Claude Code session afterwards so
