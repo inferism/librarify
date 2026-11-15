@@ -44,7 +44,7 @@ Claude asks before starting on a very large project. When it finishes you get a
 short report: how many books, how much of the source is covered, what was left
 out, and what could not be determined.
 
-Open `librarify-out/index.html` by double-click. Ring the bell at the front desk
+Open `librarify/index.html` by double-click. Ring the bell at the front desk
 for a ten-minute tour. After a library exists, you can also ask Claude questions
 about the project and it answers from the books first.
 
@@ -52,7 +52,7 @@ Running `/librarify` again rebuilds the library from scratch.
 
 ## What you get
 
-A folder named `librarify-out/` in the project:
+A folder named `librarify/` in the project:
 
 | File | What it is |
 |---|---|
@@ -65,7 +65,7 @@ A folder named `librarify-out/` in the project:
 - Claude never opens secret-bearing files (`.env`, keys, credentials, anything
   git-ignored) and never copies secret values into the books. The build stops if
   it finds one.
-- It runs nothing from your project and writes only inside `librarify-out/`.
+- It runs nothing from your project and writes only inside `librarify/`.
 - **The library describes your project's internals.** Read it before you share it,
   and treat committing or publishing it as a decision.
 

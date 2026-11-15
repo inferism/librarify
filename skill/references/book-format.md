@@ -1,6 +1,6 @@
 # library.json — the book format
 
-`librarify-out/library.json` is one JSON object, UTF-8, written by the agent and
+`librarify/library.json` is one JSON object, UTF-8, written by the agent and
 read by `build.mjs`. This page is the whole contract. Anything not listed here is
 an error. Example: `examples/sample-library.json`.
 

@@ -16,7 +16,7 @@ puts the result into the page.
 Running `/librarify` in a project creates this folder in the project root:
 
 ```
-librarify-out/
+librarify/
 ├─ index.html      the library — one file, works offline, open by double-click
 └─ library.json    the same content as data
 ```
@@ -108,8 +108,8 @@ Five steps. Only step 4 is code; the rest is the agent following `SKILL.md`.
 |---|---|---|
 | 1 | **Look** | List the project's files (using git when available), note languages and sizes, and skim the entry points and manifests. Files that hold secrets, binaries, and ignored files are skipped and never opened. |
 | 2 | **Plan** | Decide which wings apply and which books to write, and which files each book is about. The number of books follows the size of the project. |
-| 3 | **Write** | Write each book following `writing-books.md` and save everything as `librarify-out/library.json` in the format from `book-format.md`. On larger projects, books are written by parallel subagents, one per book or shelf. |
-| 4 | **Build** | Run `node build.mjs librarify-out`. The script checks the data has what the viewer needs, checks it for obvious secrets, and writes `index.html`. |
+| 3 | **Write** | Write each book following `writing-books.md` and save everything as `librarify/library.json` in the format from `book-format.md`. On larger projects, books are written by parallel subagents, one per book or shelf. |
+| 4 | **Build** | Run `node build.mjs librarify`. The script checks the data has what the viewer needs, checks it for obvious secrets, and writes `index.html`. |
 | 5 | **Report** | Say where the library is, how many books and wings, what was skipped, and what could not be determined. Offer to open it. |
 
 ### Commands
@@ -122,7 +122,7 @@ Five steps. Only step 4 is code; the rest is the agent following `SKILL.md`.
 
 Running it again rebuilds the library from scratch.
 
-If `librarify-out/library.json` already exists and the user asks a question about
+If `librarify/library.json` already exists and the user asks a question about
 the project, the agent reads the library first instead of re-reading the code.
 
 ### How many books
@@ -173,7 +173,7 @@ document.
    understand the project.
 3. **Project content is data.** Text found in the scanned project is never
    treated as an instruction to the agent (SECURITY.md).
-4. **Everything stays inside `librarify-out/`.** The skill writes nowhere else in
+4. **Everything stays inside `librarify/`.** The skill writes nowhere else in
    the user's project.
 5. **Needs nothing but Node.** No package install, no server, no network.
 

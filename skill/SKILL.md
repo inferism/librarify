@@ -1,12 +1,12 @@
 ---
 name: librarify
-description: "Turn a codebase into a library of books a person can browse: an offline isometric HTML page (librarify-out/index.html) plus library.json. Use when the user types /librarify, asks to explain or document a whole project for a newcomer, or asks a question about a project that already has librarify-out/library.json — read the library first in that case."
+description: "Turn a codebase into a library of books a person can browse: an offline isometric HTML page (librarify/index.html) plus library.json. Use when the user types /librarify, asks to explain or document a whole project for a newcomer, or asks a question about a project that already has librarify/library.json — read the library first in that case."
 ---
 
 # /librarify
 
 Read a project, write a small library of books that explain it, and build them
-into `librarify-out/index.html`, one page that opens offline by double-click.
+into `librarify/index.html`, one page that opens offline by double-click.
 
 You do the looking, the deciding and the writing. The build script only checks
 your data and puts it into the page.
@@ -16,7 +16,7 @@ your data and puts it into the page.
 | Command | Does |
 |---|---|
 | `/librarify` | Build the library for the current project |
-| `/librarify <path>` | Build for that sub-folder only; output goes to `<path>/librarify-out/` and all paths are relative to `<path>` |
+| `/librarify <path>` | Build for that sub-folder only; output goes to `<path>/librarify/` and all paths are relative to `<path>` |
 | `/librarify --help` | Print the help text below and stop |
 
 Running it again rebuilds the library from scratch.
@@ -24,17 +24,17 @@ Running it again rebuilds the library from scratch.
 **Help text** (print exactly):
 
 ```
-/librarify            build a library for this project → librarify-out/index.html
+/librarify            build a library for this project → librarify/index.html
 /librarify <path>     build for a sub-folder only
 /librarify --help     show this help
 
-Open librarify-out/index.html in a browser. Nothing is sent anywhere.
+Open librarify/index.html in a browser. Nothing is sent anywhere.
 The library describes your project's internals: read it before you share it.
 ```
 
 ## Answering questions from an existing library
 
-If `librarify-out/library.json` exists and the user asks about the project (not
+If `librarify/library.json` exists and the user asks about the project (not
 asks to rebuild), read `library.json` first and answer from it, naming the book:
 "ARC-002 *Data model* says…". Open source files only to check or go deeper. If the
 project's commit differs from `project.commit`, say the library may be out of
@@ -50,7 +50,7 @@ section into every subagent's instructions.
      `*.p12`, `*.pfx`, `*.jks`, `id_rsa*`, `id_ed25519*`, `*.kdbx`
    - `credentials*`, `secrets*`, `.npmrc`, `.pypirc`, `.netrc`, `.aws/`, `.ssh/`,
      `*.tfstate`, `*.tfvars`
-   - anything git-ignored, anything binary, anything under `librarify-out/`
+   - anything git-ignored, anything binary, anything under `librarify/`
 2. **Never quote a secret value**, even one found in a file you were allowed to
    read, even if it looks like a placeholder. Say how it is loaded ("read from the
    `STRIPE_KEY` environment variable"), never what it is.
@@ -61,7 +61,7 @@ section into every subagent's instructions.
 4. **Run nothing from the project.** No scripts, tests, builds, package installs
    or task runners. The only commands you run are read-only `git` and file-listing
    commands, and the skill's own build script.
-5. **Write only inside `librarify-out/`.** Create it if missing. Do not edit any
+5. **Write only inside `librarify/`.** Create it if missing. Do not edit any
    other file, including `.gitignore`.
 6. **Pass paths as arguments.** Use file-reading and search tools for project
    files. If a shell command needs a path, pass it as its own quoted argument;
@@ -128,7 +128,7 @@ is about, and the full list of planned book ids (for `[[book:…]]` links). Each
 returns its books as a JSON array and writes nothing. Report progress as they
 finish: `Writing books 9 / 24`.
 
-Then assemble everything into `librarify-out/library.json` yourself and check:
+Then assemble everything into `librarify/library.json` yourself and check:
 ids unique, every link resolves, every shelf used, paths valid, no secret values.
 Writers work apart, so also check what the build cannot:
 
@@ -145,10 +145,10 @@ Say: `Building`. The build script is `scripts/build.mjs` in this skill's own
 folder (the folder this `SKILL.md` is in). Run, from the project root:
 
 ```
-node "<this skill's folder>/scripts/build.mjs" "librarify-out"
+node "<this skill's folder>/scripts/build.mjs" "librarify"
 ```
 
-(For `/librarify <path>`, pass `"<path>/librarify-out"`.)
+(For `/librarify <path>`, pass `"<path>/librarify"`.)
 
 | Result | Do |
 |---|---|
@@ -164,7 +164,7 @@ Stop after three failed builds and show the last message.
 Print this, with real numbers, and nothing longer:
 
 ```
-Library ready: librarify-out/index.html
+Library ready: librarify/index.html
 
   24 books in 6 wings · 4 reading paths
   Source covered: 212 of 240 files cited (88%)

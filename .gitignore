@@ -6,7 +6,7 @@ mockup/
 .serena
 
 # Output of running librarify on this repo
-librarify-out/
+/librarify/
 
 # Node / OS
 node_modules/
