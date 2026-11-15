@@ -1,0 +1,13 @@
+# Local working docs (not committed)
+TASK.md
+DESIGN.md
+WORKFLOW.md
+mockup/
+
+# Output of running librarify on this repo
+librarify-out/
+
+# Node / OS
+node_modules/
+.DS_Store
+Thumbs.db
